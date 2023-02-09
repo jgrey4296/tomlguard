@@ -62,11 +62,7 @@ class TomlerProxy:
         self._value = (value,)
         self._types = types
         self._path  = path or []
-
-        if self._types != "Any" and not isinstance(value, self._types):
-            types_str = self._types_str()
-            path_str = ".".join(self._path + ['(' + types_str + ')'])
-            raise TypeError("Toml Value doesn't match declared Type: ", path_str, self._value, self._types).with_traceback(TraceHelper()[5:10])
+        self.match_type()
 
     def __repr__(self):
         type_str = self._types_str()
@@ -116,18 +112,27 @@ class TomlerProxy:
     def using(self, val):
         return TomlerProxy(val, types=self._types, path=self._path)
 
+    def match_type(self):
+        val = getattr(self, '_value')[0]
+        if self._types != "Any" and not isinstance(val, self._types):
+            types_str = self._types_str()
+            path_str  = ".".join(self._path + ['(' + types_str + ')'])
+            raise TypeError("TomlProxy Value doesn't match declared Type: ", path_str, val, self._types).with_traceback(TraceHelper()[5:10])
+
 class TomlerIterProxy(TomlerProxy):
 
-    def __init__(self, value, types=None, path=None, kind="any"):
-        super().__init__(value, types=types, path=path)
-        assert(kind in ["any", "all"] or isinstance(kind, dict))
-        self._subpath = []
-        self._kind    = kind
+    def __init__(self, value=None, fallback=None, types=None, path=None, kind="any"):
+        super().__init__(value or [], types=types, path=path)
+        assert(kind in ["any", "all", "flat", "match"] or isinstance(kind, dict))
+        self._fallback = fallback
+        self._subpath  = []
+        self._kind     = kind
 
     def __repr__(self):
         type_str = self._types_str()
         path_str = ".".join(self._path)
-        return f"<TomlerIterProxy: {path_str}:{type_str}>"
+        subpath_str = ".".join(self._subpath)
+        return f"<TomlerIterProxy.{self._kind}: {path_str}:{subpath_str} ({self._fallback}) <{type_str}> >"
 
     def __getattr__(self, attr):
         self._subpath.append(attr)
@@ -140,24 +145,79 @@ class TomlerIterProxy(TomlerProxy):
                 return wrapper(self.__get_any())
             case "all":
                 return wrapper(self.__get_all())
+            case "flat":
+                return wrapper(self.__get_flat())
             case dict():
                 return wrapper(self.__get_match())
             case _:
                 raise TypeError(f"Bad Kind of TomlerIterProxy: {self._kind}")
 
     def __get_any(self):
+        """
+        get the key from any available table in an array
+        """
         for entry in self._value[0]:
             try:
                 for x in self._subpath:
                     entry = getattr(entry, x)
-                return entry
+                match entry:
+                    case TomlerProxy():
+                        proxy = entry
+                    case _:
+                        return entry
             except TomlAccessError:
                 continue
+
+        match self._fallback:
+            case None:
+                pass
+            case (x,):
+                return x
+            case _:
+                return self._fallback
+
         base_path = ".".join(self._path)
         sub_path  = ".".join(self._subpath)
-        raise TomlAccessError(f"IterProxy Failure: {base_path}[?].{sub_path}")
+        raise TomlAccessError(f"TomlerIterProxy Failure: {base_path}[?].{sub_path}")
 
     def __get_all(self) -> dict|list:
+        """
+        Get all matching values from array of tables
+        """
+        all_available = []
+        proxy         = None
+        for entry in self._value[0]:
+            try:
+                for x in self._subpath:
+                    entry = getattr(entry, x)
+                match entry:
+                    case list():
+                        all_available.append(entry)
+                    case dict():
+                        all_available.append(entry)
+                    case TomlerProxy():
+                        all_available.append(entry())
+                    case Tomler():
+                        all_available.append(entry)
+                    case _:
+                        all_available.append(entry)
+            except TomlAccessError:
+                continue
+
+        if not bool(all_available):
+            match self._fallback:
+                case None:
+                    pass
+                case (None,):
+                    all_available.append(None)
+                case (list() as vals,):
+                    all_avalable += vals
+                case _ as val:
+                    all_available.append(val)
+
+        return list(all_available)
+
+    def __get_flat(self) -> Tomler:
         all_available = []
         for entry in self._value[0]:
             try:
@@ -166,20 +226,38 @@ class TomlerIterProxy(TomlerProxy):
                 match entry:
                     case list():
                         all_available += entry
+                    case dict():
+                        all_available.append(entry)
+                    case TomlerProxy():
+                        all_available.append(entry)
+                    case Tomler():
+                        all_available.append(entry.get_table())
                     case _:
                         all_available.append(entry)
             except TomlAccessError:
                 continue
 
-        if all(isinstance(x, Tomler) for x in all_available):
-            as_dict = {}
-            for x in all_available:
-                as_dict.update(x.items())
-            return Tomler(self._path + self._subpath, as_dict)
+        if not bool(all_available):
+            match self._fallback:
+                case None:
+                    pass
+                case (None,):
+                    all_available.append(None)
+                case _:
+                    all_available.append(self._fallback)
 
-        return all_available
+        if not all(isinstance(x, dict) for x in all_available):
+            raise ValueError()
+
+        as_dict = {}
+        for x in all_available:
+            as_dict.update(x.items())
+        return Tomler(self._path + self._subpath, as_dict)
 
     def __get_match(self):
+        """
+        Get a table from an array if it matches a set of key=value pairs
+        """
         for entry in self._value[0]:
             try:
                 for x in self._subpath:
@@ -188,9 +266,16 @@ class TomlerIterProxy(TomlerProxy):
                     return entry
             except TomlAccessError:
                 continue
+
         base_path = ".".join(self._path)
         sub_path  = ".".join(self._subpath)
-        raise TomlAccessError(f"IterProxy Match Failure: {base_path}[?].{sub_path} != {self._match}")
+        raise TomlAccessError(f"TomlerIterProxy Match Failure: {base_path}[?].{sub_path} != {self._match}")
+
+    def using(self, val):
+        return TomlerIterProxy(val, types=self._types, fallback=self._fallback, path=self._path, kind=self._kind)
+
+    def match_type(self):
+        pass
 
 class Tomler:
     """
@@ -231,14 +316,13 @@ class Tomler:
         """
         return Tomler._defaulted[:]
 
-    def __init__(self, path=None, table=None, fallback=None, mutable=False, iterproxy=False):
-        assert(isinstance(fallback, (NoneType, TomlerProxy)))
+    def __init__(self, path=None, table=None, proxy=None, mutable=False):
+        assert(isinstance(proxy , (NoneType, TomlerProxy)))
         path = path if isinstance(path, list) else [path]
-        super().__setattr__("__table"     , table)
-        super().__setattr__("_path"       , path[:])
-        super().__setattr__("__fallback"  , fallback)
-        super().__setattr__("__mutable"   , mutable)
-        super().__setattr__("__iterproxy" , iterproxy)
+        super().__setattr__("__table"   , table)
+        super().__setattr__("_path"     , path[:])
+        super().__setattr__("__mutable" , mutable)
+        super().__setattr__("__proxy"    , proxy)
 
     def __repr__(self):
         return f"<Tomler:{self._keys()}>"
@@ -249,41 +333,51 @@ class Tomler:
         super().__setattr__(attr, value)
 
     def __getattr__(self, attr) -> TomlerProxy | str | list | int | float | bool:
-        table     = getattr(self, "__table")
-        fallback  = getattr(self, "__fallback")
-        iterproxy = getattr(self, "__iterproxy")
-        if fallback:
-            getattr(fallback, attr)
-        match (table.get(attr) or table.get(attr.replace("_", "-"))):
-            case None if fallback is not None:
-                return fallback
-            case None:
-                path     = getattr(self, "_path")[:]
+        table = getattr(self, "__table")
+        proxy = getattr(self, "__proxy")
+        if proxy is not None:
+            getattr(proxy, attr)
+
+        match proxy, (table.get(attr) or table.get(attr.replace("_", "-"))):
+            case None, None:
+                path      = getattr(self, "_path")[:]
                 path_s    = ".".join(path)
                 available = " ".join(self._keys())
                 raise TomlAccessError(f"{path_s}.{attr} not found, available: [{available}]")
-            case dict() as result:
-                path     = getattr(self, "_path")[:]
-                return Tomler(path + [attr], result, fallback=fallback)
-            case list() as result if all(isinstance(x, dict) for x in result) and bool(iterproxy):
+            case TomlerIterProxy(), []:
+                logging.debug("Iter []")
+                return proxy.using(Tomler(path, []))
+            case TomlerIterProxy(), list() as result if all(isinstance(x, dict) for x in result):
+                logging.debug("Iter, [...]")
                 path     = getattr(self, "_path")[:] + [attr]
-                return TomlerIterProxy([Tomler(path, x, fallback=fallback) for x in result], path=path, kind=iterproxy)
-            case list() as result if all(isinstance(x, dict) for x in result):
+                return proxy.using([Tomler(path, x) for x in result])
+            case TomlerProxy(), None:
+                logging.debug("Proxy, None")
+                path     = getattr(self, "_path")[:] + [attr]
+                return proxy
+            case _, dict() as result:
+                logging.debug("_, {}")
                 path     = getattr(self, "_path")[:]
-                return [Tomler(path + [attr], x, fallback=fallback) for x in result]
-            case _ as result if fallback is not None:
+                return Tomler(path + [attr], result, proxy=proxy)
+            case None, list() as result if all(isinstance(x, dict) for x in result):
+                logging.debug("x, [{}]")
+                path     = getattr(self, "_path")[:]
+                return [Tomler(path + [attr], x, proxy=proxy) for x in result]
+            case TomlerProxy(), _ as result:
+                logging.debug("Proxy, _")
                 # Theres a fallback value, so the result needs to be wrapped so it can be called
-                return fallback.using(result)
-            case _ as result:
+                return proxy.using(result)
+            case None, _ as result:
+                logging.debug("x, Values")
                 return result
 
     def __call__(self):
         table    = getattr(self, "__table")
-        fallback = getattr(self, "__fallback")
-        if fallback is None:
-            raise TomlAccessError("Calling a Tomler only work's when guarded with on_fail")
+        proxy    = getattr(self, "__proxy")
+        if proxy is None:
+            raise TomlAccessError("Calling a Tomler only work's when guarded with a proxy")
 
-        return fallback.using(self._keys())()
+        return proxy.using(self._keys())()
 
     def __iter__(self):
         return iter(getattr(self, "__table"))
@@ -295,28 +389,67 @@ class Tomler:
 
         *without* throwing a TomlAccessError
         """
-        path  = getattr(self, "_path")[:]
-        table = getattr(self, "__table")
+        path     = getattr(self, "_path")[:]
+        table    = getattr(self, "__table")
         assert(path == ["<root>"])
-        return Tomler(path, table, fallback=TomlerProxy(val, types=types))
+        return Tomler(path, table, proxy=TomlerProxy(val, types=types))
 
-    def any_of(self):
-        path  = getattr(self, "_path")[:]
-        table = getattr(self, "__table")
+    def any_of(self, fallback=None, types=None) -> TomlerIterProxy:
+        """
+        get a value from a path, even across arrays of tables
+        so instead of: data.a.b.c[0].d
+        just:          data.any_of().a.b.c.d()
+        """
+        path     = getattr(self, "_path")[:]
+        table    = getattr(self, "__table")
+        match fallback:
+            case None:
+                fallback = getattr(self, "__proxy")
+            case TomlerProxy():
+                fallback = fallback()
+            case _:
+                fallback = fallback
         assert(path == ["<root>"])
-        return Tomler(path, table, iterproxy="any")
+        proxy = TomlerIterProxy(fallback=fallback, types=types, kind="any")
+        return Tomler(path, table, proxy=proxy)
 
-    def all_of(self):
-        path  = getattr(self, "_path")[:]
-        table = getattr(self, "__table")
+    def all_of(self, fallback=None, types=None) -> TomlerIterProxy:
+        path     = getattr(self, "_path")[:]
+        table    = getattr(self, "__table")
+        match fallback or getattr(self, "__proxy"):
+            case None:
+                proxy = TomlerIterProxy(kind="all")
+            case TomlerProxy():
+                proxy = TomlerIterProxy(fallback=fallback(), types=types, kind="all")
+            case _:
+                proxy = TomlerIterProxy(fallback=fallback, types=types, kind="all")
         assert(path == ["<root>"])
-        return Tomler(path, table, iterproxy="all")
+        return Tomler(path, table, proxy=proxy)
 
-    def match_on(self, **kwargs):
+    def flatten_on(self, fallback=None) -> TomlerIterProxy:
+        if not isinstance(fallback, (type(None), dict)):
+            raise TypeError()
+
+        path     = getattr(self, "_path")[:]
+        table    = getattr(self, "__table")
+        match fallback or getattr(self, "__proxy"):
+            case None:
+                fallback = {}
+            case TomlerProxy() as proxy:
+                fallback = proxy()
+            case _:
+                pass
+
+        assert(path == ["<root>"])
+        proxy = TomlerIterProxy(fallback=fallback, kind="flat")
+        return Tomler(path, table, proxy=proxy)
+
+    def match_on(self, **kwargs) -> TomlerIterProxy:
         table = getattr(self, "__table")
         path  = getattr(self, "_path")[:]
         assert(path == ["<root>"])
-        return Tomler(path, table, iterproxy=kwargs)
+        proxy = TomlerIterProxy(fallback=kwargs, kind="match")
+        return Tomler(path, table, proxy=proxy)
 
     def _keys(self):
         table  = object.__getattribute__(self, "__table")
