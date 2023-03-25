@@ -8,3 +8,4 @@ __version__ = "0.1.0"
 
 load        = Tomler.load
 load_dir    = Tomler.load_dir
+read        = Tomler.read

@@ -71,7 +71,7 @@ class TomlerProxy:
 
     def __call__(self, wrapper:callable=None):
         self._notify()
-        wrapper   = wrapper or (lambda x: x)
+        wrapper = wrapper or (lambda x: x)
         return wrapper(self._value[0])
 
     def __getattr__(self, attr):
@@ -151,6 +151,9 @@ class TomlerIterProxy(TomlerProxy):
                 return wrapper(self.__get_match())
             case _:
                 raise TypeError(f"Bad Kind of TomlerIterProxy: {self._kind}")
+
+    def __iter__(self):
+        return iter(self())
 
     def __get_any(self):
         """
@@ -247,7 +250,7 @@ class TomlerIterProxy(TomlerProxy):
                     all_available.append(self._fallback)
 
         if not all(isinstance(x, dict) for x in all_available):
-            raise ValueError()
+            raise ValueError("Tried to flatten on types:", [type(x) for x in all_available])
 
         as_dict = {}
         for x in all_available:
@@ -292,18 +295,30 @@ class Tomler:
 
     _defaulted : ClassVar[list[str]] = []
 
+
+    @staticmethod
+    def read(text:str) -> self:
+        logging.debug("Reading Tomler for text")
+        try:
+            return Tomler("<root>", toml.loads(text))
+        except Exception as err:
+            raise IOError("Tomler Failed to Load: ", text, err.args) from err
+
     @staticmethod
     def load(*paths:str|pl.Path, mutable=False) -> self:
-        logging.info("Creating Tomler for %s", paths)
+        logging.debug("Creating Tomler for %s", paths)
         texts = []
         for path in paths:
             texts.append(pl.Path(path).read_text())
 
-        return Tomler("<root>", toml.loads("\n".join(texts)))
+        try:
+            return Tomler("<root>", toml.loads("\n".join(texts)))
+        except Exception as err:
+            raise IOError("Tomler Failed to Load: ", paths, err.args) from err
 
     @staticmethod
     def load_dir(dirp:str|pl.Path, mutable=False) -> self:
-        logging.info("Creating Tomler for directory: %s", str(dirp))
+        logging.debug("Creating Tomler for directory: %s", str(dirp))
         texts = []
         for path in pl.Path(dirp).glob("*.toml"):
             texts.append(path.read_text())
@@ -345,42 +360,48 @@ class Tomler:
                 available = " ".join(self._keys())
                 raise TomlAccessError(f"{path_s}.{attr} not found, available: [{available}]")
             case TomlerIterProxy(), []:
-                logging.debug("Iter []")
+                # logging.debug("Iter []")
                 return proxy.using(Tomler(path, []))
             case TomlerIterProxy(), list() as result if all(isinstance(x, dict) for x in result):
-                logging.debug("Iter, [...]")
+                # logging.debug("Iter, [...]")
                 path     = getattr(self, "_path")[:] + [attr]
                 return proxy.using([Tomler(path, x) for x in result])
             case TomlerProxy(), None:
-                logging.debug("Proxy, None")
+                # logging.debug("Proxy, None")
                 path     = getattr(self, "_path")[:] + [attr]
                 return proxy
             case _, dict() as result:
-                logging.debug("_, {}")
+                # logging.debug("_, {}")
                 path     = getattr(self, "_path")[:]
                 return Tomler(path + [attr], result, proxy=proxy)
             case None, list() as result if all(isinstance(x, dict) for x in result):
-                logging.debug("x, [{}]")
+                # logging.debug("x, [{}]")
                 path     = getattr(self, "_path")[:]
                 return [Tomler(path + [attr], x, proxy=proxy) for x in result]
             case TomlerProxy(), _ as result:
-                logging.debug("Proxy, _")
+                # logging.debug("Proxy, _")
                 # Theres a fallback value, so the result needs to be wrapped so it can be called
                 return proxy.using(result)
             case None, _ as result:
-                logging.debug("x, Values")
+                # logging.debug("x, Values")
                 return result
 
     def __call__(self):
         table    = getattr(self, "__table")
         proxy    = getattr(self, "__proxy")
-        if proxy is None:
-            raise TomlAccessError("Calling a Tomler only work's when guarded with a proxy")
 
-        return proxy.using(self._keys())()
+        match proxy:
+            case None:
+                raise TomlAccessError("Calling a Tomler only work's when guarded with a proxy")
+            case TomlerIterProxy() if all(isinstance(x, dict) for x in table.values()):
+                return proxy.using(table.values())()
+            case TomlerIterProxy():
+                return proxy.using([table])()
+            case TomlerProxy():
+                return proxy.using(self._keys())()
 
     def __iter__(self):
-        return iter(getattr(self, "__table"))
+        return iter(getattr(self, "__table").items())
 
     def on_fail(self, val, types=None) -> TomlerProxy:
         """
@@ -427,6 +448,9 @@ class Tomler:
         return Tomler(path, table, proxy=proxy)
 
     def flatten_on(self, fallback=None) -> TomlerIterProxy:
+        """
+        combine all dicts at the call site to form a single dict
+        """
         if not isinstance(fallback, (type(None), dict)):
             raise TypeError()
 
