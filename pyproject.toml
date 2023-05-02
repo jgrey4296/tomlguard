@@ -14,6 +14,14 @@ classifiers     = [
   "Programming Language :: Python"
 ]
 
+urls = {
+    homepage      = "https://github.com/jgrey4296/toml_config"
+    documentation = "https://readthedocs.org/toml_config"
+    repository    = "https://github.com/jgrey4296/toml_config"
+    changelog     = "https://github.com//toml_config/blob/master/CHANGELOG.md"
+}
+
+##-- dependencies
 dependencies   = []
 
 [project.optional-dependencies]
@@ -21,21 +29,14 @@ test = [
   "pytest < 5.0.0",
 ]
 
-[project.urls]
-homepage      = "https://github.com/jgrey4296/toml_config"
-documentation = "https://readthedocs.org/toml_config"
-repository    = "https://github.com/jgrey4296/toml_config"
-changelog     = "https://github.com//toml_config/blob/master/CHANGELOG.md"
+##-- end dependencies
 
+##-- scripts
 [project.scripts]
-toml_config = "toml_config.default:main"
 
-[project.gui-scripts]
-# spam-gui      = "spam:main_gui"
+##-- end scripts
 
-[project.entry-points."nothing"]
-# tomatoes      = "spam:main_tomatoes"
-
+##-- build system
 [build-system]
 requires = [
          "setuptools >= 63.1.0",
@@ -50,15 +51,18 @@ include-package-data = true
 [tool.setuptools.packages.find]
 namespaces = true
 where      = ["."]
-include    = ["tomler"]
+include    = ["tomler*"]
 
 [tool.setuptools.package-data]
 "*" = ["*"]
 
-
 [tool.setuptools.exclude-package-data]
 
+##-- end build system
 
+# Tools #######################################################################
+
+##-- pyright
 [tool.pyright]
 # strict = toml_config.*
 verboseOutput               = true
@@ -76,7 +80,12 @@ reportUnknownVariableType   = "warning"
 reportUnnecessaryCast       = "information"
 reportUnnecessaryIsInstance = "warning"
 
+##-- end pyright
+
+##-- pytest
 [tool.pytest.ini_options]
 log_cli       = false
 log_level     = "DEBUG"
 log_cli_level = "DEBUG"
+
+##-- end pytest
