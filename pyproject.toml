@@ -14,13 +14,6 @@ classifiers     = [
   "Programming Language :: Python"
 ]
 
-urls = {
-    homepage      = "https://github.com/jgrey4296/toml_config"
-    documentation = "https://readthedocs.org/toml_config"
-    repository    = "https://github.com/jgrey4296/toml_config"
-    changelog     = "https://github.com//toml_config/blob/master/CHANGELOG.md"
-}
-
 ##-- dependencies
 dependencies   = []
 
@@ -30,6 +23,15 @@ test = [
 ]
 
 ##-- end dependencies
+
+##-- urls
+[project.urls]
+homepage      = "https://github.com/jgrey4296/toml_config"
+documentation = "https://readthedocs.org/toml_config"
+repository    = "https://github.com/jgrey4296/toml_config"
+changelog     = "https://github.com//toml_config/blob/master/CHANGELOG.md"
+
+##-- end urls
 
 ##-- scripts
 [project.scripts]
