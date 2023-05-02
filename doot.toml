@@ -5,17 +5,17 @@ subtask                  = { sleep = 1 }
 batch                    = { sleep = 1 }
 notify                   = { say-on-exit = false }
 
-[tool.doot.logging]
+[logging]
 stream = { level = "INFO", format  = "{levelname:<8} : {message}", filters = ["doot", "bkmkorg"] }
 file   = { level = "DEBUG", format = "{levelname:<8} : {message:<20} : ({module}.{lineno}.{funcName})", filters =  ["doot", "bkmkorg"] }
 
-[tool.doot.globbing]
+[globbing]
 ignores  = ['.git', '.DS_Store', "__pycache__"]
 
-[[tool.doot.directories]]
+[[directories]]
 src          = "tomler"
 build        = "build"
 docs         = "docs"
 data         = "data"
 
-[tool.doot.group.pip]
+[group.pip]

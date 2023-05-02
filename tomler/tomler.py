@@ -325,13 +325,18 @@ class Tomler:
 
         return Tomler("<root>", toml.loads("\n".join(texts)))
 
+    @staticmethod
+    def merge(*tomlers:self) -> self:
+
+        return Tomler()
+
     def report_defaulted() -> list[str]:
         """
         Report the paths using default values
         """
         return Tomler._defaulted[:]
 
-    def __init__(self, path=None, table=None, proxy=None, mutable=False):
+    def __init__(self, path:pl.Path|list=None, table:dict=None, proxy:TomlerIterProxy=None, mutable:bool=False):
         assert(isinstance(proxy , (NoneType, TomlerProxy)))
         path = path if isinstance(path, list) else [path]
         super().__setattr__("__table"   , table)
@@ -342,12 +347,12 @@ class Tomler:
     def __repr__(self):
         return f"<Tomler:{self._keys()}>"
 
-    def __setattr__(self, attr, value):
+    def __setattr__(self, attr:str, value:Any):
         if not getattr(self, "__mutable"):
             raise TypeError()
         super().__setattr__(attr, value)
 
-    def __getattr__(self, attr) -> TomlerProxy | str | list | int | float | bool:
+    def __getattr__(self, attr:str) -> TomlerProxy | str | list | int | float | bool:
         table = getattr(self, "__table")
         proxy = getattr(self, "__proxy")
         if proxy is not None:
