@@ -22,7 +22,7 @@ with warnings.catch_warnings():
     pass
 ##-- end warnings
 
-from tomler.tomler import TomlerBase, TomlAccessError, Tomler
+from tomler.tomler import TomlerBase, TomlAccessError, Tomler, TomlerProxy
 
 class TestBaseTomler(unittest.TestCase):
     ##-- setup-teardown
@@ -69,6 +69,20 @@ class TestBaseTomler(unittest.TestCase):
         basic = TomlerBase({"test": "blah"})
         with self.assertRaises(TomlAccessError):
             basic['non_existing']
+
+    def test_dot_access(self):
+        basic = TomlerBase({"test": "blah"})
+        self.assertEqual(basic.test, "blah")
+
+    def test_index(self):
+        basic = TomlerBase({"test": "blah"})
+        self.assertEqual(basic._index(), ["<root>"])
+
+    def test_index_independence(self):
+        basic = TomlerBase({"test": "blah"})
+        self.assertEqual(basic._index(), ["<root>"])
+        basic.test
+        self.assertEqual(basic._index(), ["<root>"])
 
     def test_nested_access(self):
         basic = TomlerBase({"test": {"blah": 2}})
@@ -130,7 +144,6 @@ class TestBaseTomler(unittest.TestCase):
         self.assertEqual(basic.test.blah, [1,2,3])
         self.assertEqual(basic.bloo, ["a","b","c"])
 
-
 class TestProxiedTomler(unittest.TestCase):
     ##-- setup-teardown
 
@@ -152,7 +165,106 @@ class TestProxiedTomler(unittest.TestCase):
     ##-- end setup-teardown
 
     def test_initial(self):
-        pass
+        base = Tomler({"test": "blah"})
+        proxied = base.on_fail("aweg")
+        self.assertIsInstance(proxied, TomlerBase)
+        self.assertIsInstance(proxied.doesnt_exist, TomlerProxy)
+
+    def test_proxy_on_existing_key(self):
+        base = Tomler({"test": "blah"})
+        proxied = base.on_fail("aweg")
+        self.assertEqual("blah", proxied.test())
+
+    def test_proxy_on_bad_key(self):
+        base    = Tomler({"test": "blah"})
+        proxied = base.on_fail("aweg")
+        self.assertEqual("aweg", proxied.awehjo())
+
+    def test_proxy_index_independence(self):
+        base    = Tomler({"test": "blah"})
+        base_val = base.test
+        proxied = base.on_fail("aweg")
+        good_key = proxied.test
+        bad_key = proxied.ajojo
+
+        self.assertEqual(base._index(), ["<root>"])
+        self.assertEqual(proxied._index(), ["<root>"])
+        self.assertEqual(good_key._index(), ["<root>", "test"])
+        self.assertEqual(bad_key._index(), ["<root>", "ajojo"])
+
+    def test_proxy_multi_independence(self):
+        base     = Tomler({"test": "blah"})
+        proxied  = base.on_fail("aweg")
+        proxied2 = base.on_fail("jioji")
+        self.assertNotEqual(id(proxied), id(proxied2))
+        self.assertEqual("aweg", proxied.awehjo())
+        self.assertEqual("jioji", proxied2.awjioq())
+
+    def test_proxy_value_retrieval(self):
+        base     = Tomler({"test": "blah"})
+        proxied = base.on_fail("aweg").test
+        self.assertIsInstance(proxied, TomlerProxy)
+        self.assertEqual(proxied(), "blah")
+
+    def test_proxy_nested_value_retrieval(self):
+        base     = Tomler({"test": { "blah": {"bloo": "final"}}})
+        proxied = base.on_fail("aweg").test.blah.bloo
+        self.assertIsInstance(proxied, TomlerProxy)
+        self.assertEqual(proxied(), "final")
+
+    def test_proxy_fallback(self):
+        base     = Tomler({"test": { "blah": {"bloo": "final"}}})
+        proxied = base.on_fail("aweg").test.blah.missing
+        self.assertIsInstance(proxied, TomlerProxy)
+        self.assertEqual(proxied(), "aweg")
+
+    def test_no_proxy_error(self):
+        base     = Tomler({"test": { "blah": {"bloo": "final"}}})
+        with self.assertRaises(TomlAccessError):
+            base.test.blah()
+
+    def test_proxy_early_check(self):
+        base     = Tomler({"test": { "blah": {"bloo": "final"}}})
+        proxied = base.on_fail("aweg").test
+        self.assertIsInstance(proxied, Tomler)
+
+    def test_proxy_multi_use(self):
+        base     = Tomler({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
+        proxied = base.on_fail("aweg").test.blah
+        self.assertEqual(proxied.bloo(), "final")
+        self.assertEqual(proxied.aweg(), "joijo")
+
+    def test_proxied_report_empty(self):
+        base     = Tomler({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
+        self.assertEqual(Tomler.report_defaulted(), [])
+
+    def test_proxied_report_no_existing_values(self):
+        Tomler._defaulted = []
+        base     = Tomler({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
+        base.test.blah.bloo
+        base.test.blah.aweg
+        self.assertEqual(Tomler.report_defaulted(), [])
+
+    def test_proxied_report_missing_values(self):
+        Tomler._defaulted = []
+        base     = Tomler({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
+        base.on_fail(False).this.doesnt.exist()
+        base.on_fail(False).test.blah.other()
+        self.assertEqual(Tomler.report_defaulted(),
+                        ["<root>.this.doesnt.exist = false # <Any>",
+                         "<root>.test.blah.other = false # <Any>"])
+
+
+    def test_proxied_report_missing_typed_values(self):
+        Tomler._defaulted = []
+        base     = Tomler({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
+        base.on_fail("aValue", str).this.doesnt.exist()
+        base.on_fail(2, int).test.blah.other()
+        self.assertEqual(Tomler.report_defaulted(),
+                        ["<root>.this.doesnt.exist = \"aValue\" # <str>",
+                         "<root>.test.blah.other = 2 # <int>"])
+
+
 
 class TestLoaderTomler(unittest.TestCase):
     ##-- setup-teardown
@@ -209,7 +321,6 @@ class TestTomlerMerge(unittest.TestCase):
     def test_merge_with_shadowing(self):
         basic = Tomler.merge({"a":2}, {"a": 5, "b": 5}, shadow=True)
         self.assertEqual(dict(basic), {"a":2, "b": 5})
-
 
 ##-- ifmain
 if __name__ == '__main__':

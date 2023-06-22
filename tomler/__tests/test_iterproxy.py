@@ -62,7 +62,7 @@ class TestIterProxy(unittest.TestCase):
 
     def test_repr(self):
         basic = TomlerIterProxy([5]).blah.bloo
-        self.assertEqual(repr(basic), "<TomlerIterProxy.first: :blah.bloo (None) <Any> >")
+        self.assertEqual(repr(basic), "<TomlerIterProxy.first: <root>:blah.bloo (None) <Any> >")
 
     def test_repr_preindex(self):
         basic = TomlerIterProxy([5], index=["blah", "bloo"]).sub.test

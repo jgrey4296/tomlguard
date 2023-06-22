@@ -51,24 +51,24 @@ class TestProxy(unittest.TestCase):
     def test_attr(self):
         proxy = TomlerProxy(2)
         proxy.blah.bloo
-        self.assertEqual(repr(proxy), "<TomlerProxy: blah.bloo:Any>")
+        self.assertEqual(repr(proxy), "<TomlerProxy: <root>.blah.bloo:Any>")
 
     def test_item(self):
         proxy = TomlerProxy(2)
         proxy['blah']['bloo']
-        self.assertEqual(repr(proxy), "<TomlerProxy: blah.bloo:Any>")
+        self.assertEqual(repr(proxy), "<TomlerProxy: <root>.blah.bloo:Any>")
 
 
     def test_multi_item(self):
         proxy = TomlerProxy(2)
         proxy['blah', 'bloo']
-        self.assertEqual(repr(proxy), "<TomlerProxy: blah.bloo:Any>")
+        self.assertEqual(repr(proxy), "<TomlerProxy: <root>.blah.bloo:Any>")
 
     def test_multi_item_expansion(self):
         proxy = TomlerProxy(2)
         access_list = ["blah", "bloo"]
         proxy[*access_list]
-        self.assertEqual(repr(proxy), "<TomlerProxy: blah.bloo:Any>")
+        self.assertEqual(repr(proxy), "<TomlerProxy: <root>.blah.bloo:Any>")
 
     def test_call_basic(self):
         proxy = TomlerProxy(2)
@@ -78,6 +78,14 @@ class TestProxy(unittest.TestCase):
         proxy = TomlerProxy(2)
         self.assertEqual(proxy(wrapper=lambda x: x*2), 4)
 
+    def test_call_wrapper_error(self):
+        def bad_wrapper(val):
+            raise TypeError()
+
+        proxy = TomlerProxy(2)
+        with self.assertRaises(TypeError):
+            proxy(wrapper=bad_wrapper)
+
     def test_types(self):
         proxy = TomlerProxy(2, int)
         self.assertTrue(proxy)
@@ -86,21 +94,23 @@ class TestProxy(unittest.TestCase):
         with self.assertRaises(TypeError):
             TomlerProxy("blah", int)
 
-    def test_proxy_using(self):
+    def test_proxy_inject(self):
         proxy1 = TomlerProxy(2, int)
-        proxy2 = proxy1.using(5)
+        proxy2 = proxy1.inject(5)
         self.assertEqual(proxy2(), 5)
 
-    def test_proxy_using_typecheck_fail(self):
+    def test_proxy_inject_typecheck_fail(self):
         proxy1 = TomlerProxy(2, int)
         with self.assertRaises(TypeError):
-            proxy1.using("blah")
+            proxy1.inject("blah")
 
-    def test_proxy_using_index_update(self):
+    def test_proxy_inject_index_update(self):
         proxy1 = TomlerProxy(2, int).blah.bloo
-        proxy2 = proxy1.using(5).awef
-        self.assertEqual(proxy1._index(), ["blah", "bloo"])
-        self.assertEqual(proxy2._index(), ["blah", "bloo", "awef"])
+        proxy2 = proxy1.inject(5).awef
+        self.assertEqual(proxy1._index(), ["<root>", "blah", "bloo"])
+        self.assertEqual(proxy2._index(), ["<root>", "blah", "bloo", "awef"])
+        self.assertEqual(proxy2(), 5)
+
 
 ##-- ifmain
 if __name__ == '__main__':

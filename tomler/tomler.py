@@ -75,8 +75,8 @@ class TomlerProxy:
         types = types or "Any"
         self._value = (value,)
         self._types = types
-        self.__index  = index or []
-        self.match_type()
+        self.__index  = (index or ["<root>"])
+        self._match_type()
 
     def __repr__(self):
         type_str = self._types_str()
@@ -109,15 +109,15 @@ class TomlerProxy:
             case (val,), []:
                 return
             case (str() as val,), [*index]:
-                index_str = ".".join(index) + f"   =  \"{val}\" # <{types_str}>"
+                index_str = ".".join(index) + f" = \"{val}\" # <{types_str}>"
                 Tomler._defaulted.append(index_str)
                 return
             case (bool() as val,), [*index]:
-                index_str = ".".join(index) + f"   =  {str(val).lower()} # <{types_str}>"
+                index_str = ".".join(index) + f" = {str(val).lower()} # <{types_str}>"
                 Tomler._defaulted.append(index_str)
                 return
             case (val,), [*index]:
-                index_str = ".".join(index) + f"   =  {val} # <{types_str}>"
+                index_str = ".".join(index) + f" = {val} # <{types_str}>"
                 Tomler._defaulted.append(index_str)
                 return
             case val, index:
@@ -134,10 +134,13 @@ class TomlerProxy:
 
         return types_str
 
-    def using(self, val):
-        return TomlerProxy(val, types=self._types, index=self._index()[:])
+    def inject(self, val=None, attr=None) -> TomlerProxy:
+        new_index = self._index()
+        if attr:
+            new_index.append(attr)
+        return TomlerProxy(val or self._value[0], types=self._types, index=new_index)
 
-    def match_type(self):
+    def _match_type(self):
         val = getattr(self, '_value')[0]
         if self._types != "Any" and not isinstance(val, self._types):
             types_str = self._types_str()
@@ -145,7 +148,7 @@ class TomlerProxy:
             raise TypeError("TomlProxy Value doesn't match declared Type: ", index_str, val, self._types).with_traceback(TraceHelper()[5:10])
 
     def _index(self):
-        return self.__index
+        return self.__index[:]
 
     def update_index(self, attr):
         self.__index.append(attr)
@@ -180,13 +183,13 @@ class TomlerIterProxy(TomlerProxy):
         wrapper = wrapper or (lambda x: x)
         match self._kind:
             case "first":
-                return wrapper(self.get_first())
+                return wrapper(self._get_first())
             case "all":
-                return wrapper(self.get_all())
+                return wrapper(self._get_all())
             case "flat":
-                return wrapper(self.get_flat())
+                return wrapper(self._get_flat())
             case dict():
-                return wrapper(self.get_match())
+                return wrapper(self._get_match())
             case _:
                 raise TypeError(f"Bad Kind of TomlerIterProxy: {self._kind}")
 
@@ -194,9 +197,9 @@ class TomlerIterProxy(TomlerProxy):
         return iter(self())
 
     def _subindex(self):
-        return self.__subindex
+        return self.__subindex[:]
 
-    def get_first(self):
+    def _get_first(self):
         """
         get the first value from any available table in an array
         """
@@ -223,7 +226,7 @@ class TomlerIterProxy(TomlerProxy):
         sub_index = ".".join(self._subindex())
         raise TomlAccessError(f"TomlerIterProxy Failure: {base_index}[?].{sub_index}")
 
-    def get_all(self) -> list:
+    def _get_all(self) -> list:
         """
         Get all matching values from array of tables
         """
@@ -261,8 +264,7 @@ class TomlerIterProxy(TomlerProxy):
         sub_index = ".".join(self._subindex())
         raise TomlAccessError(f"TomlerIterProxy Failure: {base_index}[?].{sub_index}")
 
-
-    def get_flat(self) -> Tomler | list:
+    def _get_flat(self) -> Tomler | list:
         all_available = []
         for entry in self._value[0]:
             try:
@@ -279,7 +281,6 @@ class TomlerIterProxy(TomlerProxy):
                         all_available.append(entry)
             except TomlAccessError:
                 continue
-
 
         match bool(all_available), self._fallback:
             case True, _:
@@ -303,7 +304,7 @@ class TomlerIterProxy(TomlerProxy):
         sub_index = ".".join(self._subindex())
         raise TomlAccessError(f"TomlerIterProxy Failure: {base_index}[?].{sub_index}")
 
-    def get_match(self):
+    def _get_match(self):
         """
         Get a table from an array if it matches a set of key=value pairs
         """
@@ -320,10 +321,13 @@ class TomlerIterProxy(TomlerProxy):
         sub_index = ".".join(self._subindex())
         raise TomlAccessError(f"TomlerIterProxy Match Failure: {base_index}[?].{sub_index} != {self._match}")
 
-    def using(self, val):
-        return TomlerIterProxy(val, types=self._types, fallback=self._fallback, index=self._index(), kind=self._kind)
+    def inject(self, val=None, attr=None) -> TomlerIterProxy:
+        new_index = self._index()
+        if attr:
+            new_index.append(attr)
+        return TomlerIterProxy(val or self.value[0], types=self._types, fallback=self._fallback, index=new_index, kind=self._kind)
 
-    def match_type(self):
+    def _match_type(self):
         pass
 
     def update_index(self, attr):
@@ -338,7 +342,7 @@ class ProxyEntryMixin:
 
         *without* throwing a TomlAccessError
         """
-        index = self._index()[:]
+        index = self._index()
         table = self._table()
         if index != ["<root>"]:
             raise TomlAccessError("On Fail not declared at entry", index)
@@ -453,7 +457,7 @@ class LoaderMixin:
         except Exception as err:
             raise IOError("Tomler Failed to Directory: ", dirp, err.args) from err
 
-class TomlerBase:
+class TomlerBase(dict):
     """
     Provides access to toml data (Tomler.load(apath))
     but as attributes (data.a.path.in.the.data)
@@ -468,10 +472,9 @@ class TomlerBase:
 
     _defaulted : ClassVar[list[str]] = []
 
-
     def report_defaulted() -> list[str]:
         """
-        Report the index paths using default values
+        Report the index paths inject default values
         """
         return Tomler._defaulted[:]
 
@@ -493,7 +496,6 @@ class TomlerBase:
     def __getattr__(self, attr:str) -> TomlerProxy | str | list | int | float | bool:
         table = self._table()
         proxy = super_get(self, "__proxy")
-        self.update_index(attr)
 
         match proxy, (table.get(attr, None) or table.get(attr.replace("_", "-"), None)):
             case None, None:
@@ -503,21 +505,24 @@ class TomlerBase:
                 raise TomlAccessError(f"{index_s} not found, available: [{available}]")
             case TomlerIterProxy(), [] | None:
                 # logging.debug("Iter []")
-                return proxy.using(Tomler([], self._index()[:]))
+                return proxy.inject(Tomler([], self._index() + [attr]), attr=attr)
             case TomlerProxy(), None:
                 # logging.debug("Proxy, None")
-                return proxy
+                return proxy.inject(None, attr=attr)
             case TomlerIterProxy(), list() as result if all(isinstance(x, dict) for x in result):
                 # logging.debug("Iter, [...]")
-                index = self._index()
-                return proxy.using([Tomler(x, index[:]) for x in result])
+                return Tomler([Tomler(x, self._index() + [attr]) for x in result],
+                              self._index() + [attr],
+                              proxy.inject(attr=attr))
+            case TomlerProxy(), dict() as result:
+                return Tomler(result, self._index() + [attr], proxy.inject(attr=attr))
             case TomlerProxy(), _ as result:
                 # logging.debug("Proxy, _")
                 # Theres a fallback value, so the result needs to be wrapped so it can be called
-                return proxy.using(result)
+                return proxy.inject(result, attr=attr)
             case None, dict() as result:
                 # logging.debug("_, {}")
-                return Tomler(result, self._index()[:])
+                return Tomler(result, self._index() + [attr])
             case None, list() as result if all(isinstance(x, dict) for x in result):
                 # logging.debug("x, [{}]")
                 index = self._index()
@@ -537,6 +542,9 @@ class TomlerBase:
 
         return curr
 
+    def __len__(self):
+        return len(self._table())
+
     def __call__(self):
         table    = getattr(self, "__table")
         proxy    = getattr(self, "__proxy")
@@ -545,11 +553,11 @@ class TomlerBase:
             case None:
                 raise TomlAccessError("Calling a Tomler only work's when guarded with a proxy")
             case TomlerIterProxy() if all(isinstance(x, dict) for x in table.values()):
-                return proxy.using(table.values())()
+                return proxy.inject(table.values())()
             case TomlerIterProxy():
-                return proxy.using([table])()
+                return proxy.inject([table])()
             case TomlerProxy():
-                return proxy.using(self.keys())()
+                return proxy.inject(self.keys())()
 
     def __iter__(self):
         return iter(getattr(self, "__table").items())
@@ -558,10 +566,11 @@ class TomlerBase:
         return other in self.keys()
 
     def _index(self):
-        return super_get(self, "__index")
+        return super_get(self, "__index")[:]
 
     def _table(self):
         return super_get(self, "__table")
+
     def get(self, key, default=None) -> Any:
         if key in self:
             return self[key]
