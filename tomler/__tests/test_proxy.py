@@ -45,68 +45,79 @@ class TestProxy(unittest.TestCase):
     ##-- end setup-teardown
 
     def test_initial(self):
-        proxy = TomlerProxy(2)
-        self.assertTrue(proxy)
+        proxy = TomlerProxy(None, fallback=2)
+        self.assertIsInstance(proxy, TomlerProxy)
 
     def test_attr(self):
-        proxy = TomlerProxy(2)
-        proxy.blah.bloo
-        self.assertEqual(repr(proxy), "<TomlerProxy: <root>.blah.bloo:Any>")
+        proxy = TomlerProxy(None, fallback=2)
+        accessed = proxy.blah.bloo
+        self.assertEqual(repr(accessed), "<TomlerProxy: <root>.blah.bloo:Any>")
+        self.assertEqual(repr(proxy), "<TomlerProxy: <root>:Any>")
 
     def test_item(self):
-        proxy = TomlerProxy(2)
-        proxy['blah']['bloo']
-        self.assertEqual(repr(proxy), "<TomlerProxy: <root>.blah.bloo:Any>")
+        proxy    = TomlerProxy(None, fallback=2)
+        accessed = proxy['blah']['bloo']
+        self.assertEqual(repr(accessed), "<TomlerProxy: <root>.blah.bloo:Any>")
+        self.assertEqual(repr(proxy), "<TomlerProxy: <root>:Any>")
 
 
     def test_multi_item(self):
-        proxy = TomlerProxy(2)
-        proxy['blah', 'bloo']
-        self.assertEqual(repr(proxy), "<TomlerProxy: <root>.blah.bloo:Any>")
+        proxy    = TomlerProxy(None, fallback=2)
+        accessed = proxy['blah', 'bloo']
+        self.assertEqual(repr(proxy), "<TomlerProxy: <root>:Any>")
+        self.assertEqual(repr(accessed), "<TomlerProxy: <root>.blah.bloo:Any>")
 
     def test_multi_item_expansion(self):
-        proxy = TomlerProxy(2)
+        proxy       = TomlerProxy(None, fallback=2)
         access_list = ["blah", "bloo"]
-        proxy[*access_list]
-        self.assertEqual(repr(proxy), "<TomlerProxy: <root>.blah.bloo:Any>")
+        accessed    = proxy[*access_list]
+        self.assertEqual(repr(accessed), "<TomlerProxy: <root>.blah.bloo:Any>")
 
-    def test_call_basic(self):
-        proxy = TomlerProxy(2)
+    def test_call_get_value(self):
+        proxy = TomlerProxy(5, fallback=2)
+        self.assertEqual(proxy(), 5)
+
+    def test_call_get_None_value(self):
+        proxy = TomlerProxy(None, fallback=2)
+        self.assertEqual(proxy(), None)
+
+    def test_call_get_fallback(self):
+        proxy = TomlerProxy((None,), fallback=2)
         self.assertEqual(proxy(), 2)
 
     def test_call_wrapper(self):
-        proxy = TomlerProxy(2)
+        proxy = TomlerProxy((None,), fallback=2)
         self.assertEqual(proxy(wrapper=lambda x: x*2), 4)
 
     def test_call_wrapper_error(self):
         def bad_wrapper(val):
             raise TypeError()
 
-        proxy = TomlerProxy(2)
+        proxy = TomlerProxy(None, fallback=2)
         with self.assertRaises(TypeError):
             proxy(wrapper=bad_wrapper)
 
     def test_types(self):
-        proxy = TomlerProxy(2, int)
+        proxy = TomlerProxy(True, fallback=2, types=int)
         self.assertTrue(proxy)
 
     def test_types_fail(self):
         with self.assertRaises(TypeError):
-            TomlerProxy("blah", int)
+            TomlerProxy(None, fallback="blah", types=int)
 
     def test_proxy_inject(self):
-        proxy1 = TomlerProxy(2, int)
-        proxy2 = proxy1.inject(5)
+        proxy1 = TomlerProxy(None, fallback=2, types=int)
+        proxy2 = proxy1._inject(5)
         self.assertEqual(proxy2(), 5)
 
-    def test_proxy_inject_typecheck_fail(self):
-        proxy1 = TomlerProxy(2, int)
+    def test_proxy_value_retrieval_typecheck_fail(self):
+        proxy1 = TomlerProxy(None, fallback=2, types=int)
         with self.assertRaises(TypeError):
-            proxy1.inject("blah")
+            proxy1._inject("blah")()
 
     def test_proxy_inject_index_update(self):
-        proxy1 = TomlerProxy(2, int).blah.bloo
-        proxy2 = proxy1.inject(5).awef
+        proxy1 = TomlerProxy(None, fallback=2, types=int).blah.bloo
+        proxy2 = proxy1._inject(5).awef
         self.assertEqual(proxy1._index(), ["<root>", "blah", "bloo"])
         self.assertEqual(proxy2._index(), ["<root>", "blah", "bloo", "awef"])
         self.assertEqual(proxy2(), 5)
