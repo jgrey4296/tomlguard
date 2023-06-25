@@ -22,7 +22,10 @@ with warnings.catch_warnings():
     pass
 ##-- end warnings
 
-from tomler.tomler import TomlerBase, TomlAccessError, Tomler, TomlerProxy
+from tomler.base import TomlerBase
+from tomler.error import TomlAccessError
+from tomler.tomler import Tomler
+from tomler.utils.proxy import TomlerProxy
 
 class TestBaseTomler(unittest.TestCase):
     ##-- setup-teardown
@@ -144,6 +147,27 @@ class TestBaseTomler(unittest.TestCase):
         self.assertEqual(basic.test.blah, [1,2,3])
         self.assertEqual(basic.bloo, ["a","b","c"])
 
+    def test_contains(self):
+        basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
+        self.assertIn("test", basic)
+
+    def test_contains_false(self):
+        basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
+        self.assertNotIn("doesntexist", basic)
+
+    def test_contains_nested_but_doesnt_recurse(self):
+        basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
+        self.assertNotIn("blah", basic)
+
+    def test_contains_nested(self):
+        basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
+        self.assertIn("blah", basic.test)
+
+    def test_contains_nested_false(self):
+        basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
+        self.assertNotIn("doesntexist", basic.test)
+
+
 class TestLoaderTomler(unittest.TestCase):
     ##-- setup-teardown
 
@@ -189,7 +213,7 @@ class TestTomlerMerge(unittest.TestCase):
 
     def test_initial(self):
         simple = Tomler.merge({"a":2}, {"b": 5})
-        self.assertIsInstance(simple, Tomler)
+        self.assertIsInstance(simple, TomlerBase)
         self.assertEqual(simple._table(), {"a": 2, "b": 5})
 
     def test_merge_conflict(self):

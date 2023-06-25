@@ -22,7 +22,11 @@ with warnings.catch_warnings():
     pass
 ##-- end warnings
 
-from tomler.tomler import TomlerBase, TomlAccessError, Tomler, TomlerProxy, TomlerIterProxy
+from tomler.error import TomlAccessError
+from tomler.base import TomlerBase
+from tomler.tomler import Tomler
+from tomler.utils.proxy import TomlerProxy
+from tomler.utils.iter_proxy import TomlerIterProxy
 
 class TestProxiedTomler(unittest.TestCase):
     ##-- setup-teardown
@@ -127,19 +131,19 @@ class TestProxiedTomler(unittest.TestCase):
         self.assertEqual(proxied.bloo(), "final")
         self.assertEqual(proxied.aweg(), "joijo")
 
-    @mock.patch.object(Tomler, "_defaulted", set())
+    @mock.patch.object(TomlerBase, "_defaulted", set())
     def test_proxied_report_empty(self):
         base     = Tomler({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
         self.assertEqual(Tomler.report_defaulted(), [])
 
-    @mock.patch.object(Tomler, "_defaulted", set())
+    @mock.patch.object(TomlerBase, "_defaulted", set())
     def test_proxied_report_no_existing_values(self):
         base     = Tomler({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
         base.test.blah.bloo
         base.test.blah.aweg
         self.assertEqual(Tomler.report_defaulted(), [])
 
-    @mock.patch.object(Tomler, "_defaulted", set())
+    @mock.patch.object(TomlerBase, "_defaulted", set())
     def test_proxied_report_missing_values(self):
         base              = Tomler({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
         base.on_fail(False).this.doesnt.exist()
@@ -149,7 +153,7 @@ class TestProxiedTomler(unittest.TestCase):
         self.assertIn("<root>.this.doesnt.exist = false # <Any>", defaulted)
         self.assertIn("<root>.test.blah.other = false # <Any>", defaulted)
 
-    @mock.patch.object(Tomler, "_defaulted", set())
+    @mock.patch.object(TomlerBase, "_defaulted", set())
     def test_proxied_report_missing_typed_values(self):
         base     = Tomler({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
         base.on_fail("aValue", str).this.doesnt.exist()

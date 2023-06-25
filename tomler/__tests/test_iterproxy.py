@@ -22,7 +22,8 @@ with warnings.catch_warnings():
     pass
 ##-- end warnings
 
-from tomler.tomler import TomlAccessError, TomlerIterProxy
+from tomler.error import TomlAccessError
+from tomler.utils.iter_proxy import TomlerIterProxy
 
 class TestIterProxy(unittest.TestCase):
     ##-- setup-teardown

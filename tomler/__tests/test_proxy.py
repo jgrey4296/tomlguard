@@ -22,7 +22,7 @@ with warnings.catch_warnings():
     pass
 ##-- end warnings
 
-from tomler.tomler import TomlerProxy
+from tomler.utils.proxy import TomlerProxy
 
 class TestProxy(unittest.TestCase):
     ##-- setup-teardown
