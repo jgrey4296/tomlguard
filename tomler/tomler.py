@@ -53,56 +53,15 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 from collections import ChainMap
-from tomler.utils.proxy_mixin import ProxyEntryMixin
 from tomler.base import TomlerBase
 from tomler.error import TomlAccessError
-
-class LoaderMixin:
-
-    @staticmethod
-    def read(text:str) -> self:
-        logging.debug("Reading Tomler for text")
-        try:
-            return Tomler(toml.loads(text))
-        except Exception as err:
-            raise IOError("Tomler Failed to Load: ", text, err.args) from err
-
-    @staticmethod
-    def from_dict(data:dict) -> self:
-        logging.debug("Making Tomler from dict")
-        try:
-            return Tomler(data)
-        except Exception as err:
-            raise IOError("Tomler Failed to Load: ", data, err.args) from err
-
-    @staticmethod
-    def load(*paths:str|pl.Path) -> self:
-        logging.debug("Creating Tomler for %s", paths)
-        try:
-            texts = []
-            for path in paths:
-                texts.append(pl.Path(path).read_text())
-
-            return Tomler(toml.loads("\n".join(texts)))
-        except Exception as err:
-            raise IOError("Tomler Failed to Load: ", paths, err.args) from err
-
-    @staticmethod
-    def load_dir(dirp:str|pl.Path) -> self:
-        logging.debug("Creating Tomler for directory: %s", str(dirp))
-        try:
-            texts = []
-            for path in pl.Path(dirp).glob("*.toml"):
-                texts.append(path.read_text())
-
-            return Tomler(toml.loads("\n".join(texts)))
-        except Exception as err:
-            raise IOError("Tomler Failed to Directory: ", dirp, err.args) from err
+from tomler.utils.proxy_mixin import ProxyEntryMixin
+from tomler.utils.loader import LoaderMixin
 
 class Tomler(TomlerBase, ProxyEntryMixin, LoaderMixin):
 
-    @staticmethod
-    def merge(*tomlers:self, dfs:callable=None, index=None, shadow=False) -> self:
+    @classmethod
+    def merge(cls, *tomlers:self, dfs:callable=None, index=None, shadow=False) -> self:
         """
         Given an ordered list of tomlers, convert them to dicts,
         update an empty dict with each,
