@@ -108,7 +108,7 @@ class ProxyEntryMixin:
         if index != ["<root>"]:
             raise TomlAccessError("On Fail not declared at entry", index)
 
-        return TomlerProxy(self, types=types, index=index, fallback=fallback)
+        return TomlerProxy(self, types=types, fallback=fallback)
 
     def first_of(self, fallback, types=None) -> TomlerIterProxy:
         """
@@ -129,7 +129,7 @@ class ProxyEntryMixin:
         if index != ["<root>"]:
             raise TomlAccessError("All Of not declared at entry", index)
 
-        return TomlerIterProxy(self, fallback=fallback, index=index, kind="all")
+        return TomlerIterProxy(self, fallback=fallback, kind="all")
 
     def flatten_on(self, fallback) -> TomlerIterProxy:
         """
@@ -143,10 +143,10 @@ class ProxyEntryMixin:
         if index != ["<root>"]:
             raise TomlAccessError("Flatten On not declared at entry", index)
 
-        return TomlerIterProxy(self, index=index, fallback=fallback, kind="flat")
+        return TomlerIterProxy(self, fallback=fallback, kind="flat")
 
     def match_on(self, **kwargs) -> TomlerIterProxy:
         index = self._table()[:]
         if index != ["<root>"]:
             raise TomlAccessError("Match On not declared at entry", index)
-        return TomlerIterProxy(self, index=index, fallback=kwargs, kind="match")
+        return TomlerIterProxy(self, fallback=kwargs, kind="match")

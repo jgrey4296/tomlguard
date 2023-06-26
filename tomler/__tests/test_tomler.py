@@ -6,225 +6,159 @@
 from __future__ import annotations
 
 import logging as logmod
-import unittest
 import warnings
 import pathlib as pl
 from typing import (Any, Callable, ClassVar, Generic, Iterable, Iterator,
                     Mapping, Match, MutableMapping, Sequence, Tuple, TypeAlias,
                     TypeVar, cast)
-from unittest import mock
 ##-- end imports
 logging = logmod.root
 
-##-- warnings
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    pass
-##-- end warnings
-
+import pytest
 from tomler.base import TomlerBase
 from tomler.error import TomlAccessError
 from tomler.tomler import Tomler
 from tomler.utils.proxy import TomlerProxy
 
-class TestBaseTomler(unittest.TestCase):
-    ##-- setup-teardown
-
-    @classmethod
-    def setUpClass(cls):
-        LOGLEVEL      = logmod.DEBUG
-        LOG_FILE_NAME = "log.{}".format(pl.Path(__file__).stem)
-
-        cls.file_h        = logmod.FileHandler(LOG_FILE_NAME, mode="w")
-        cls.file_h.setLevel(LOGLEVEL)
-
-        logging.setLevel(logmod.NOTSET)
-        logging.addHandler(cls.file_h)
-
-    @classmethod
-    def tearDownClass(cls):
-        logging.removeHandler(cls.file_h)
-
-    ##-- end setup-teardown
+class TestBaseTomler:
 
     def test_initial(self):
         basic = TomlerBase({"test": "blah"})
-        self.assertTrue(basic)
+        assert(basic is not None)
 
     def test_basic_access(self):
         basic = TomlerBase({"test": "blah"})
-        self.assertEqual(basic.test, "blah")
+        assert(basic.test == "blah")
 
     def test_basic_item_access(self):
         basic = TomlerBase({"test": "blah"})
-        self.assertEqual(basic['test'], "blah")
+        assert(basic['test'] == "blah")
 
     def test_multi_item_access(self):
         basic = TomlerBase({"test": {"blah": "bloo"}})
-        self.assertEqual(basic['test', "blah"], "bloo")
+        assert(basic['test', "blah"] ==  "bloo")
 
     def test_basic_access_error(self):
         basic = TomlerBase({"test": "blah"})
-        with self.assertRaises(TomlAccessError):
+        with pytest.raises(TomlAccessError):
             basic.none_existing
 
     def test_item_access_error(self):
         basic = TomlerBase({"test": "blah"})
-        with self.assertRaises(TomlAccessError):
+        with pytest.raises(TomlAccessError):
             basic['non_existing']
 
     def test_dot_access(self):
         basic = TomlerBase({"test": "blah"})
-        self.assertEqual(basic.test, "blah")
+        assert(basic.test == "blah")
 
     def test_index(self):
         basic = TomlerBase({"test": "blah"})
-        self.assertEqual(basic._index(), ["<root>"])
+        assert(basic._index() == ["<root>"])
 
     def test_index_independence(self):
         basic = TomlerBase({"test": "blah"})
-        self.assertEqual(basic._index(), ["<root>"])
+        assert(basic._index() == ["<root>"])
         basic.test
-        self.assertEqual(basic._index(), ["<root>"])
+        assert(basic._index() == ["<root>"])
 
     def test_nested_access(self):
         basic = TomlerBase({"test": {"blah": 2}})
-        self.assertEqual(basic.test.blah, 2)
+        assert(basic.test.blah == 2)
 
     def test_repr(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        self.assertEqual(repr(basic), "<Tomler:['test', 'bloo']>")
+        assert(repr(basic) == "<Tomler:['test', 'bloo']>")
 
     def test_immutable(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             basic.test = 5
 
     def test_uncallable(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        with self.assertRaises(TomlAccessError):
+        with pytest.raises(TomlAccessError):
             basic()
 
     def test_iter(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
         pairs = list(basic)
-        self.assertEqual(pairs, [("test", {"blah":2}), ("bloo", 2)])
+        assert(pairs == [("test", {"blah":2}), ("bloo", 2)])
 
     def test_contains(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        self.assertTrue("test" in basic)
+        assert("test" in basic)
 
     def test_contains_fail(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        self.assertFalse("blah" in basic)
+        assert("blah" not in basic)
 
     def test_get(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        self.assertEqual(basic.get("bloo"), 2)
+        assert(basic.get("bloo") == 2)
 
     def test_get_default(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        self.assertIsNone(basic.get("blah"))
+        assert(basic.get("blah") is None)
 
     def test_get_default_value(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        self.assertEqual(basic.get("blah", 5), 5)
+        assert(basic.get("blah", 5) == 5)
 
     def test_keys(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        self.assertEqual(basic.keys(), ["test", "bloo"])
+        assert(basic.keys() == ["test", "bloo"])
 
     def test_items(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        self.assertEqual(list(basic.items()), [("test", {"blah": 2}), ("bloo", 2)])
+        assert(list(basic.items()) == [("test", {"blah": 2}), ("bloo", 2)])
 
     def test_values(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        self.assertEqual(list(basic.values()), [{"blah": 2}, 2])
+        assert(list(basic.values()) == [{"blah": 2}, 2])
 
     def test_list_access(self):
         basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
-        self.assertEqual(basic.test.blah, [1,2,3])
-        self.assertEqual(basic.bloo, ["a","b","c"])
+        assert(basic.test.blah == [1,2,3])
+        assert(basic.bloo == ["a","b","c"])
 
     def test_contains(self):
         basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
-        self.assertIn("test", basic)
+        assert("test" in basic)
 
     def test_contains_false(self):
         basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
-        self.assertNotIn("doesntexist", basic)
+        assert("doesntexist" not in basic)
 
     def test_contains_nested_but_doesnt_recurse(self):
         basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
-        self.assertNotIn("blah", basic)
+        assert("blah" not in basic)
 
     def test_contains_nested(self):
         basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
-        self.assertIn("blah", basic.test)
+        assert("blah" in basic.test)
 
     def test_contains_nested_false(self):
         basic = TomlerBase({"test": {"blah": [1,2,3]}, "bloo": ["a","b","c"]})
-        self.assertNotIn("doesntexist", basic.test)
+        assert("doesntexist" not in basic.test)
 
 
-class TestLoaderTomler(unittest.TestCase):
-    ##-- setup-teardown
+class TestLoaderTomler:
 
-    @classmethod
-    def setUpClass(cls):
-        LOGLEVEL      = logmod.DEBUG
-        LOG_FILE_NAME = "log.{}".format(pl.Path(__file__).stem)
-
-        cls.file_h        = logmod.FileHandler(LOG_FILE_NAME, mode="w")
-        cls.file_h.setLevel(LOGLEVEL)
-
-        logging.setLevel(logmod.NOTSET)
-        logging.addHandler(cls.file_h)
-
-    @classmethod
-    def tearDownClass(cls):
-        logging.removeHandler(cls.file_h)
-
-    ##-- end setup-teardown
-
-    def test_initial(self):
+    def test_initial_load(self):
         pass
 
-class TestTomlerMerge(unittest.TestCase):
-    ##-- setup-teardown
-
-    @classmethod
-    def setUpClass(cls):
-        LOGLEVEL      = logmod.DEBUG
-        LOG_FILE_NAME = "log.{}".format(pl.Path(__file__).stem)
-
-        cls.file_h        = logmod.FileHandler(LOG_FILE_NAME, mode="w")
-        cls.file_h.setLevel(LOGLEVEL)
-
-        logging.setLevel(logmod.NOTSET)
-        logging.addHandler(cls.file_h)
-
-    @classmethod
-    def tearDownClass(cls):
-        logging.removeHandler(cls.file_h)
-
-    ##-- end setup-teardown
+class TestTomlerMerge:
 
     def test_initial(self):
         simple = Tomler.merge({"a":2}, {"b": 5})
-        self.assertIsInstance(simple, TomlerBase)
-        self.assertEqual(simple._table(), {"a": 2, "b": 5})
+        assert(isinstance(simple, TomlerBase))
+        assert(simple._table() == {"a": 2, "b": 5})
 
     def test_merge_conflict(self):
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             Tomler.merge({"a":2}, {"a": 5})
 
     def test_merge_with_shadowing(self):
         basic = Tomler.merge({"a":2}, {"a": 5, "b": 5}, shadow=True)
-        self.assertEqual(dict(basic), {"a":2, "b": 5})
-
-##-- ifmain
-if __name__ == '__main__':
-    unittest.main()
-##-- end ifmain
+        assert(dict(basic) == {"a":2, "b": 5})
