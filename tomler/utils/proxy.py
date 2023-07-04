@@ -126,6 +126,8 @@ class TomlerProxy:
                 val = self._data
             case (None,), None:
                 raise ValueError("No Value, and no fallback")
+            case (None,), (None,):
+                val = None
             case (None,), data:
                 val = data
             case None, _:
