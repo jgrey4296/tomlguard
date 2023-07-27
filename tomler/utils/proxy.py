@@ -95,6 +95,7 @@ from types import UnionType
 from tomler.utils.trace_helper import TraceHelper
 from tomler.base import TomlerBase
 from tomler.error import TomlAccessError
+from tomler.base import TomlTypes
 
 class TomlerProxy:
     """
@@ -105,22 +106,22 @@ class TomlerProxy:
     It also can type check its value and the value retrieved from the toml data
     """
 
-    def __init__(self, data, types=None, index=None, fallback=None):
-        self._types             = types or Any
-        self._data : TomlerBase = data
-        self.__index            = index or ["<root>"]
-        self._fallback          = fallback
+    def __init__(self, data:TomlerBase, types:Any=None, index:list[str]|None=None, fallback:TomlTypes|None=None):
+        self._types                       = types or Any
+        self._data                        = data
+        self.__index : list[str]            = index or ["<root>"]
+        self._fallback                    = fallback
         if fallback:
             self._match_type(fallback)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         type_str = self._types_str()
         index_str = ".".join(self._index())
         return f"<TomlerProxy: {index_str}:{type_str}>"
 
-    def __call__(self, wrapper:callable=None):
+    def __call__(self, wrapper:callable[[TomlTypes], Any]|None=None) -> Any:
         self._notify()
-        wrapper = wrapper or (lambda x: x)
+        wrapper : callable[[TomlTypes], TomlTypes] = wrapper or (lambda x: x)
         match self._data, self._fallback:
             case TomlerBase(), _:
                 val = self._data
@@ -140,7 +141,7 @@ class TomlerProxy:
         wrapped = wrapper(val)
         return self._match_type(wrapped)
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr:str) -> TomlerProxy:
         try:
             match self._data:
                 case TomlerBase():
@@ -149,10 +150,10 @@ class TomlerProxy:
                     raise TomlAccessError()
                 case _:
                     return self._inject(attr=attr)
-        except TomlAccessError as err:
+        except TomlAccessError:
             return self._inject(clear=True, attr=attr)
 
-    def __getitem__(self, keys):
+    def __getitem__(self, keys:str|tuple[str]) -> TomlerProxy:
         curr = self
         match keys:
             case tuple():
@@ -169,10 +170,10 @@ class TomlerProxy:
 
         return 0
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self._data is not None
 
-    def _notify(self):
+    def _notify(self) -> None:
         types_str = self._types_str()
         match self._data, self._fallback, self._index():
             case TomlerBase(), _, _:
@@ -186,7 +187,7 @@ class TomlerProxy:
             case val, flbck, index,:
                 raise TypeError("Unexpected Values found: ", val, index, flbck)
 
-    def _types_str(self):
+    def _types_str(self) -> str:
         match self._types:
             case UnionType() as targ:
                 types_str = repr(targ)
@@ -197,7 +198,7 @@ class TomlerProxy:
 
         return types_str
 
-    def _inject(self, val=(None,), attr=None, clear=False) -> TomlerProxy:
+    def _inject(self, val:tuple[Any]=(None,), attr:str|None=None, clear:bool=False) -> TomlerProxy:
         new_index = self._index()
         if attr:
             new_index.append(attr)
@@ -212,7 +213,7 @@ class TomlerProxy:
             val = (None,)
         return TomlerProxy(val, types=self._types, index=new_index, fallback=self._fallback)
 
-    def _match_type(self, val) -> Any:
+    def _match_type(self, val:TomlTypes) -> TomlTypes:
         if self._types != Any and not isinstance(val, self._types):
             types_str = self._types_str()
             index_str  = ".".join(self.__index + ['(' + types_str + ')'])
@@ -221,8 +222,8 @@ class TomlerProxy:
 
         return val
 
-    def _index(self):
+    def _index(self) -> list[str]:
         return self.__index[:]
 
-    def _update_index(self, attr):
+    def _update_index(self, attr:str) -> None:
         self.__index.append(attr)

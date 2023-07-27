@@ -73,10 +73,13 @@ class TestProxiedTomler:
 
     def test_proxy_false_value_retrieval(self):
         base    = Tomler({"test": None})
+        assert(base.test is None)
         proxied = base.on_fail("aweg").test
         assert(base.test is None)
         assert(isinstance(proxied, TomlerProxy))
-        assert(proxied() is None)
+        assert(base.test is None)
+        assert(proxied._fallback == "aweg")
+        assert(proxied() == None)
 
     def test_proxy_nested_false_value_retrieval(self):
         base     = Tomler({"top": {"mid": {"bot": None}}})

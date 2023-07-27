@@ -20,6 +20,7 @@ import types
 import weakref
 # from copy import deepcopy
 # from dataclasses import InitVar, dataclass, field
+import typing
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     Iterable, Iterator, Mapping, Match, MutableMapping,
                     Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
@@ -93,13 +94,15 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 from types import NoneType
-from collections.abc import Mapping
+from collections.abc import Mapping, ItemsView, KeysView, ValuesView
 from tomler.error import TomlAccessError
 
 super_get = object.__getattribute__
 super_set = object.__setattr__
 
-class TomlerBase(Mapping):
+TomlTypes : TypeAlias = str | int | float | bool | list['TomlTypes'] | dict[str,'TomlTypes'] | datetime.datetime
+
+class TomlerBase(Mapping[str, TomlTypes]):
     """
     Provides access to toml data (Tomler.load(apath))
     but as attributes (data.a.path.in.the.data)
@@ -115,17 +118,21 @@ class TomlerBase(Mapping):
     _defaulted : ClassVar[set[str]] = set()
 
     @staticmethod
-    def add_defaulted(index:str, val:Any, types:str="Any"):
+    def add_defaulted(index:str|list[str], val:TomlTypes, types:str="Any") -> None:
         match index, val:
             case list(), _:
                 raise TypeError("Tried to Register a default value with a list index, use a str")
-            case _, bool():
+            case str(), bool():
                 index_str = f"{index} = {str(val).lower()} # <{types}>"
-            case _, val:
+            case str(), _:
                 index_str = f"{index} = {repr(val)} # <{types}>"
-            case val, _, [*index]:
-                index_str = f"{index} = {repr(val)} # <{types}>"
-            case val, index:
+            case [*xs], bool():
+                index_path = ".".join(xs)
+                index_str = f"{index_path} = {str(val).lower()} # <{types}>"
+            case [*xs], _:
+                index_path = ".".join(xs)
+                index_str = f"{index_path} = {val} # <{types}>"
+            case _, _:
                 raise TypeError("Unexpected Values found: ", val, index)
 
         TomlerBase._defaulted.add(index_str)
@@ -137,20 +144,20 @@ class TomlerBase(Mapping):
         """
         return list(TomlerBase._defaulted)
 
-    def __init__(self, data:dict, index:None|list=None, mutable:bool=False):
+    def __init__(self, data:dict[str,TomlTypes], index:None|list[str]=None, mutable:bool=False):
         super_set(self, "__table", data or {})
         super_set(self, "__index"   , (index or ["<root>"])[:])
         super_set(self, "__mutable" , mutable)
 
-    def __repr__(self):
-        return f"<Tomler:{self.keys()}>"
+    def __repr__(self) -> str:
+        return f"<Tomler:{list(self.keys())}>"
 
-    def __setattr__(self, attr:str, value:Any):
+    def __setattr__(self, attr:str, value:TomlTypes) -> None:
         if not getattr(self, "__mutable"):
             raise TypeError()
         super_set(self, attr, value)
 
-    def __getattr__(self, attr:str) -> TomlerBase | str | list | int | float | bool:
+    def __getattr__(self, attr:str) -> TomlerBase | TomlTypes | list[TomlerBase]:
         table = self._table()
 
         if attr not in table and attr.replace("_", "-") not in table:
@@ -164,61 +171,63 @@ class TomlerBase(Mapping):
                 return self.__class__(result, self._index() + [attr])
             case list() as result if all(isinstance(x, dict) for x in result):
                 index = self._index()
-                return [self.__class__(x, index[:]) for x in result]
+                return [self.__class__(x, index[:]) for x in result if isinstance(x, dict)]
             case _ as result:
                 return result
 
-    def __getitem__(self, keys):
-        curr = self
+    def __getitem__(self, keys:str|list[str]|tuple[str]) -> TomlTypes:
+        curr : typing.Self = self
         match keys:
             case tuple():
                 for key in keys:
                     curr = curr.__getattr__(key)
             case str():
                 curr = self.__getattr__(keys)
+            case _:
+                pass
 
         return curr
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._table())
 
-    def __call__(self):
+    def __call__(self) -> TomlTypes:
         raise TomlAccessError("Don't call a Tomler, call a TomlerProxy")
 
     def __iter__(self):
         return iter(getattr(self, "__table").items())
 
-    def __contains__(self, other):
-        return other in self.keys()
+    def __contains__(self, __key: object) -> bool:
+        return __key in self.keys()
 
-    def _index(self):
+    def _index(self) -> list[str]:
         return super_get(self, "__index")[:]
 
-    def _table(self):
+    def _table(self) -> dict[str,TomlTypes]:
         return super_get(self, "__table")
 
-    def get(self, key, default=None) -> Any:
+    def get(self, key:str, default:TomlTypes|None=None) -> TomlTypes|None:
         if key in self:
             return self[key]
 
         return default
 
-    def keys(self):
+    def keys(self) -> KeysView[str]:
         # table  = object.__getattribute__(self, "__table")
         table = super_get(self, "__table")
-        return list(table.keys())
+        return table.keys()
 
-    def items(self):
+    def items(self) -> ItemsView[str, TomlTypes]:
         # match object.__getattribute__(self, "__table"):
         match super_get(self, "__table"):
             case dict() as val:
                 return val.items()
             case list() as val:
-                return zip(val, val)
+                return dict({self._index()[-1]: val}).items()
             case _:
                 raise TypeError()
 
-    def values(self):
+    def values(self) -> ValuesView[TomlTypes]:
         # match object.__getattribute__(self, "__table"):
         match super_get(self, "__table"):
             case dict() as val:

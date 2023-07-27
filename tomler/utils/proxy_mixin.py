@@ -97,7 +97,7 @@ from tomler.error import TomlAccessError
 
 class ProxyEntryMixin:
 
-    def on_fail(self, fallback, types=None) -> TomlerProxy:
+    def on_fail(self, fallback:Any, types:Any|None=None) -> TomlerProxy:
         """
         use a fallback value in an access chain,
         eg: doot.config.on_fail("blah").this.doesnt.exist() -> "blah"
@@ -110,7 +110,7 @@ class ProxyEntryMixin:
 
         return TomlerProxy(self, types=types, fallback=fallback)
 
-    def first_of(self, fallback, types=None) -> TomlerIterProxy:
+    def first_of(self, fallback:Any, types:Any|None=None) -> TomlerIterProxy:
         """
         get the first value from a index path, even across arrays of tables
         so instead of: data.a.b.c[0].d
@@ -123,7 +123,7 @@ class ProxyEntryMixin:
 
         return TomlerIterProxy(self, fallback=fallback, types=types, kind="any")
 
-    def all_of(self, fallback, types=None) -> TomlerIterProxy:
+    def all_of(self, fallback:Any, types:Any|None=None) -> TomlerIterProxy:
         index = self._index()[:]
 
         if index != ["<root>"]:
@@ -131,7 +131,7 @@ class ProxyEntryMixin:
 
         return TomlerIterProxy(self, fallback=fallback, kind="all")
 
-    def flatten_on(self, fallback) -> TomlerIterProxy:
+    def flatten_on(self, fallback:Any) -> TomlerIterProxy:
         """
         combine all dicts at the call site to form a single dict
         """
@@ -145,7 +145,7 @@ class ProxyEntryMixin:
 
         return TomlerIterProxy(self, fallback=fallback, kind="flat")
 
-    def match_on(self, **kwargs) -> TomlerIterProxy:
+    def match_on(self, **kwargs:tuple[str,Any]) -> TomlerIterProxy:
         index = self._table()[:]
         if index != ["<root>"]:
             raise TomlAccessError("Match On not declared at entry", index)

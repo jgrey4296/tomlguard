@@ -43,15 +43,13 @@ except ImportError:
     # Fallback to external package
     import toml
 
-if TYPE_CHECKING:
-    # tc only imports
-    pass
 ##-- end imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
+from typing import Self
 from collections import ChainMap
 from tomler.base import TomlerBase
 from tomler.error import TomlAccessError
@@ -61,7 +59,7 @@ from tomler.utils.loader import LoaderMixin
 class Tomler(TomlerBase, ProxyEntryMixin, LoaderMixin):
 
     @classmethod
-    def merge(cls, *tomlers:self, dfs:callable=None, index=None, shadow=False) -> self:
+    def merge(cls, *tomlers:Self, dfs:callable=None, index=None, shadow=False) -> Self:
         """
         Given an ordered list of tomlers, convert them to dicts,
         update an empty dict with each,

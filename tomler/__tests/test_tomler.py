@@ -107,7 +107,7 @@ class TestBaseTomler:
 
     def test_keys(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})
-        assert(basic.keys() == ["test", "bloo"])
+        assert(list(basic.keys()) == ["test", "bloo"])
 
     def test_items(self):
         basic = TomlerBase({"test": {"blah": 2}, "bloo": 2})

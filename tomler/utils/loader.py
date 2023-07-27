@@ -91,6 +91,8 @@ import more_itertools as mitz
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
+from typing import Self
+from tomler.base import TomlTypes
 from tomler.error import TomlAccessError
 
 try:
@@ -103,7 +105,7 @@ except ImportError:
 class LoaderMixin:
 
     @classmethod
-    def read(cls, text:str) -> self:
+    def read(cls, text:str) -> Self:
         logging.debug("Reading Tomler for text")
         try:
             return cls(toml.loads(text))
@@ -111,7 +113,7 @@ class LoaderMixin:
             raise IOError("Tomler Failed to Load: ", text, err.args) from err
 
     @classmethod
-    def from_dict(cls, data:dict) -> self:
+    def from_dict(cls, data:dict[str, TomlTypes]) -> Self:
         logging.debug("Making Tomler from dict")
         try:
             return cls(data)
@@ -119,7 +121,7 @@ class LoaderMixin:
             raise IOError("Tomler Failed to Load: ", data, err.args) from err
 
     @classmethod
-    def load(cls, *paths:str|pl.Path) -> self:
+    def load(cls, *paths:str|pl.Path) -> Self:
         logging.debug("Creating Tomler for %s", paths)
         try:
             texts = []
@@ -131,7 +133,7 @@ class LoaderMixin:
             raise IOError("Tomler Failed to Load: ", paths, err.args) from err
 
     @classmethod
-    def load_dir(cls, dirp:str|pl.Path) -> self:
+    def load_dir(cls, dirp:str|pl.Path) -> Self:
         logging.debug("Creating Tomler for directory: %s", str(dirp))
         try:
             texts = []
