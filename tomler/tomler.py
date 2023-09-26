@@ -55,8 +55,9 @@ from tomler.base import TomlerBase
 from tomler.error import TomlAccessError
 from tomler.utils.proxy_mixin import ProxyEntryMixin
 from tomler.utils.loader import LoaderMixin
+from tomler.utils.writing import WriterMixin
 
-class Tomler(TomlerBase, ProxyEntryMixin, LoaderMixin):
+class Tomler(TomlerBase, ProxyEntryMixin, LoaderMixin, WriterMixin):
 
     @classmethod
     def merge(cls, *tomlers:Self, dfs:callable=None, index=None, shadow=False) -> Self:
@@ -73,4 +74,4 @@ class Tomler(TomlerBase, ProxyEntryMixin, LoaderMixin):
                 raise KeyError("Key Conflict:", curr_keys & new_keys)
             curr_keys |= new_keys
 
-        return Tomler.from_dict(ChainMap(*tomlers))
+        return Tomler.from_dict(ChainMap(*(dict(x) for x in tomlers)))
