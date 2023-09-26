@@ -145,8 +145,10 @@ class TestBaseTomler:
 
 class TestLoaderTomler:
 
+    @pytest.mark.skip(reason="not implemented")
     def test_initial_load(self):
-        pass
+        # TODO
+        raise
 
 class TestTomlerMerge:
 
@@ -162,3 +164,11 @@ class TestTomlerMerge:
     def test_merge_with_shadowing(self):
         basic = Tomler.merge({"a":2}, {"a": 5, "b": 5}, shadow=True)
         assert(dict(basic) == {"a":2, "b": 5})
+
+
+    def test_merge_tomlers(self):
+        first  = Tomler({"a":2})
+        second = Tomler({"a": 5, "b": 5})
+
+        merged = Tomler.merge(first ,second, shadow=True)
+        assert(dict(merged) == {"a":2, "b": 5})

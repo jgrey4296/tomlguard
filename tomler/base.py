@@ -144,7 +144,7 @@ class TomlerBase(Mapping[str, TomlTypes]):
         """
         return list(TomlerBase._defaulted)
 
-    def __init__(self, data:dict[str,TomlTypes], index:None|list[str]=None, mutable:bool=False):
+    def __init__(self, data:dict[str,TomlTypes]=None, *, index:None|list[str]=None, mutable:bool=False):
         super_set(self, "__table", data or {})
         super_set(self, "__index"   , (index or ["<root>"])[:])
         super_set(self, "__mutable" , mutable)
@@ -168,10 +168,10 @@ class TomlerBase(Mapping[str, TomlTypes]):
 
         match table.get(attr, None) or table.get(attr.replace("_", "-"), None):
             case dict() as result:
-                return self.__class__(result, self._index() + [attr])
+                return self.__class__(result, index=self._index() + [attr])
             case list() as result if all(isinstance(x, dict) for x in result):
                 index = self._index()
-                return [self.__class__(x, index[:]) for x in result if isinstance(x, dict)]
+                return [self.__class__(x, index=index[:]) for x in result if isinstance(x, dict)]
             case _ as result:
                 return result
 
