@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 """
+A Proxy for Tomler,
+  which allows you to use the default attribute access
+  (data.a.b.c)
+  even when there might not be an `a.b.c` path in the data.
 
+  Thus:
+  data.on_fail(default_value).a.b.c()
+
+  Note: To distinguish between not giving a default value,
+  and giving a default value of `None`,
+  wrap the default value in a tuple: (None,)
 """
 
 ##-- builtin imports
@@ -214,6 +224,9 @@ class TomlerProxy:
         return TomlerProxy(val, types=self._types, index=new_index, fallback=self._fallback)
 
     def _match_type(self, val:TomlTypes) -> TomlTypes:
+        if val == (None,):
+            val = None
+
         if self._types != Any and not isinstance(val, self._types):
             types_str = self._types_str()
             index_str  = ".".join(self.__index + ['(' + types_str + ')'])
