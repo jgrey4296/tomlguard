@@ -105,7 +105,7 @@ class TomlerBase(Mapping[str, TomlTypes]):
         table = self._table()
 
         if attr not in table and attr.replace("_", "-") not in table:
-            index     = self._index()
+            index     = self._index() + [attr]
             index_s   = ".".join(index)
             available = " ".join(self.keys())
             raise TomlAccessError(f"{index_s} not found, available: [{available}]")
