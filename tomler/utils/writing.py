@@ -28,43 +28,28 @@ from uuid import UUID, uuid1
 ##-- end builtin imports
 
 ##-- lib imports
-# from bs4 import BeautifulSoup
-# import construct as C
-# import dirty-equals as deq
-# import graphviz
-# import matplotlib.pyplot as plt
 import more_itertools as mitz
-# import networkx as nx
-# import numpy as np
-# import pandas
-# import pomegranate as pom
-# import pony import orm
-# import pronouncing
-# import pyparsing as pp
-# import rich
-# import seaborn as sns
-# import sklearn
-# import spacy # nlp = spacy.load("en_core_web_sm")
-# import stackprinter # stackprinter.set_excepthook(style='darkbg2')
-# import sty
-# import sympy
-# import tomllib
-# import toolz
-# import tqdm
-# import validators
-# import z3
 ##-- end lib imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-import tomli_w
+try:
+    import tomli_w
 
-class WriterMixin:
+    class WriterMixin:
 
-    def __str__(self) -> str:
-        return tomli_w.dumps(self._table())
+        def __str__(self) -> str:
+            return tomli_w.dumps(self._table())
 
-    def to_file(self, path:pl.Path) -> None:
-        path.write_text(str(self))
+        def to_file(self, path:pl.Path) -> None:
+            path.write_text(str(self))
+
+except ImportError:
+    logging.debug("No Tomli-w found, tomler will not write toml, only read it")
+
+    class WriterMixin:
+
+        def to_file(self, path:pl.Path) -> None:
+            raise NotImplementedError("Tomli-w isn't installed, so Tomler can't write, only read")
