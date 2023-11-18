@@ -19,7 +19,7 @@ dependencies   = []
 
 [project.optional-dependencies]
 test = [
-     "pytest < 5.0.0",
+     "pytest > 7.0.0",
 ]
 write = [
      "toml-w"
