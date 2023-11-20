@@ -9,7 +9,7 @@ import logging as logmod
 import warnings
 import pathlib as pl
 from typing import (Any, Callable, ClassVar, Generic, Iterable, Iterator,
-                    Mapping, Match, MutableMapping, Sequence, Tuple, TypeAlias,
+                    Mapping, Match, MutableMapping, Sequence, Tuple,
                     TypeVar, cast)
 ##-- end imports
 logging = logmod.root

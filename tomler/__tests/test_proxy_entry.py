@@ -9,8 +9,7 @@ import logging as logmod
 import warnings
 import pathlib as pl
 from typing import (Any, Callable, ClassVar, Generic, Iterable, Iterator,
-                    Mapping, Match, MutableMapping, Sequence, Tuple, TypeAlias,
-                    TypeVar, cast)
+                    Mapping, Match, MutableMapping, Sequence, Tuple, TypeVar, cast)
 ##-- end imports
 logging = logmod.root
 
@@ -169,4 +168,3 @@ class TestProxiedTomler:
         base   = Tomler({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
         with pytest.raises(TypeError):
             base.flatten_on(2)
-

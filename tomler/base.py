@@ -23,9 +23,15 @@ import weakref
 import typing
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
+                    Protocol, Sequence, Tuple, TypeVar,
                     cast, final, overload, runtime_checkable)
 from uuid import UUID, uuid1
+
+try:
+    # for py 3.10 onwards:
+    from typing import TypeAlias
+except ImportError:
+    TypeAlias = Any
 
 ##-- end builtin imports
 
@@ -33,7 +39,6 @@ from uuid import UUID, uuid1
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from types import NoneType
 from collections.abc import Mapping, ItemsView, KeysView, ValuesView
 from tomler.error import TomlAccessError
 

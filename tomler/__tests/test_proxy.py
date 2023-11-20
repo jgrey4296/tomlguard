@@ -9,7 +9,7 @@ import logging as logmod
 import warnings
 import pathlib as pl
 from typing import (Any, Callable, ClassVar, Generic, Iterable, Iterator,
-                    Mapping, Match, MutableMapping, Sequence, Tuple, TypeAlias,
+                    Mapping, Match, MutableMapping, Sequence, Tuple,
                     TypeVar, cast)
 ##-- end imports
 logging = logmod.root
@@ -95,5 +95,3 @@ class TestProxy:
         assert(proxy1._index() == ["<root>", "blah", "bloo"])
         assert(proxy2._index() == ["<root>", "blah", "bloo", "awef"])
         assert(proxy2() == 5)
-
-

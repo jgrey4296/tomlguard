@@ -21,7 +21,7 @@ import weakref
 # from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
+                    Protocol, Sequence, Tuple, TypeVar,
                     cast, final, overload, runtime_checkable)
 from uuid import UUID, uuid1
 
@@ -31,7 +31,12 @@ from uuid import UUID, uuid1
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from typing import Self
+try:
+    # for py 3.11 onwards:
+    from typing import Self
+except ImportError:
+    Self = Any
+
 from tomler.base import TomlTypes
 from tomler.error import TomlAccessError
 

@@ -2,28 +2,22 @@
 """
 
 """
+##-- imports
 from __future__ import annotations
 
 import logging as logmod
 import pathlib as pl
 from typing import (Any, Callable, ClassVar, Generic, Iterable, Iterator,
-                    Mapping, Match, MutableMapping, Sequence, Tuple, TypeAlias,
+                    Mapping, Match, MutableMapping, Sequence, Tuple,
                     TypeVar, cast)
 import warnings
+
+##-- end imports
 
 import pytest
 from tomler.tomler import Tomler
 
 logging = logmod.root
-
-# caplog
-# mocker.patch | patch.object | patch.multiple | patch.dict | stopall | stop | spy | stub
-# pytest.mark.filterwarnings
-# pytest.parameterize
-# pytest.skip | skipif | xfail
-# with pytest.deprecated_call
-# with pytest.raises
-# with pytest.warns(warntype)
 
 data_dir = pl.Path(__file__).parent / "__data"
 

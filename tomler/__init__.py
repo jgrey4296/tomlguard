@@ -2,7 +2,6 @@
 
 from typing import Final
 
-
 from .tomler import TomlAccessError, Tomler
 from .base   import TomlTypes
 

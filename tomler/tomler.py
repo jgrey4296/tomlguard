@@ -25,16 +25,27 @@ from __future__ import annotations
 import abc
 import logging as logmod
 import pathlib as pl
-from types import NoneType
 from copy import deepcopy
 from dataclasses import InitVar, dataclass, field
 from re import Pattern
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
+                    Protocol, Sequence, Tuple, TypeVar,
                     cast, final, overload, runtime_checkable)
 from uuid import UUID, uuid1
 from weakref import ref
+
+try:
+    # for py 3.10 onwards:
+    from typing import TypeAlias
+except ImportError:
+    TypeAlias = Any
+
+try:
+    # for py 3.11 onwards:
+    from typing import Self
+except ImportError:
+    Self = Any
 
 try:
     # For py 3.11 onwards:
@@ -49,7 +60,6 @@ except ImportError:
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from typing import Self
 from collections import ChainMap
 from tomler.base import TomlerBase
 from tomler.error import TomlAccessError
