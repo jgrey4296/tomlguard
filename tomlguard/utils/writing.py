@@ -44,9 +44,9 @@ try:
             path.write_text(str(self))
 
 except ImportError:
-    logging.debug("No Tomli-w found, tomler will not write toml, only read it")
+    logging.debug("No Tomli-w found, TomlGuard will not write toml, only read it")
 
     class WriterMixin:
 
         def to_file(self, path:pl.Path) -> None:
-            raise NotImplementedError("Tomli-w isn't installed, so Tomler can't write, only read")
+            raise NotImplementedError("Tomli-w isn't installed, so TomlGuard can't write, only read")

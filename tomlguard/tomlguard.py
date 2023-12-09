@@ -15,7 +15,7 @@ object.__getattribute(self, name):
     except AttributeError:
         return self.__getattr__(name)
 
-So by looking up values in Tomler.__table and handling missing values,
+So by looking up values in TomlGuard.__table and handling missing values,
 we can skip dict style key access
 
 """
@@ -61,27 +61,27 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 from collections import ChainMap
-from tomler.base import TomlerBase
-from tomler.error import TomlAccessError
-from tomler.utils.proxy_mixin import ProxyEntryMixin
-from tomler.utils.loader import LoaderMixin
-from tomler.utils.writing import WriterMixin
+from tomlguard.base import GuardBase
+from tomlguard.error import TomlAccessError
+from tomlguard.utils.proxy_mixin import GuardProxyEntryMixin
+from tomlguard.utils.loader import LoaderMixin
+from tomlguard.utils.writing import WriterMixin
 
-class Tomler(TomlerBase, ProxyEntryMixin, LoaderMixin, WriterMixin):
+class TomlGuard(GuardBase, GuardProxyEntryMixin, LoaderMixin, WriterMixin):
 
     @classmethod
-    def merge(cls, *tomlers:Self, dfs:callable=None, index=None, shadow=False) -> Self:
+    def merge(cls, *tomlguards:Self, dfs:callable=None, index=None, shadow=False) -> Self:
         """
-        Given an ordered list of tomlers, convert them to dicts,
+        Given an ordered list of tomlguards, convert them to dicts,
         update an empty dict with each,
-        then wrap that combined dict in a tomler
+        then wrap that combined dict in a tomlguard
         # TODO if given a dfs callable, use it to merge more intelligently
         """
         curr_keys = set()
-        for data in tomlers:
+        for data in tomlguards:
             new_keys = set(data.keys())
             if bool(curr_keys & new_keys) and not shadow:
                 raise KeyError("Key Conflict:", curr_keys & new_keys)
             curr_keys |= new_keys
 
-        return Tomler.from_dict(ChainMap(*(dict(x) for x in tomlers)))
+        return TomlGuard.from_dict(ChainMap(*(dict(x) for x in tomlguards)))

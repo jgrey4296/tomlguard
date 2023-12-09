@@ -32,11 +32,11 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 from collections import ChainMap
-from tomler.base import TomlTypes, TomlerBase
-from tomler.error import TomlAccessError
-from tomler.utils.proxy import TomlerProxy
+from tomlguard.base import TomlTypes, GuardBase
+from tomlguard.error import TomlAccessError
+from tomlguard.utils.proxy import TomlGuardProxy
 
-class TomlerIterProxy(TomlerProxy):
+class TomlGuardIterProxy(TomlGuardProxy):
     """
     A Proxy for lists and dicts, which can flatten, or match particulars
     """
@@ -59,7 +59,7 @@ class TomlerIterProxy(TomlerProxy):
         type_str     = self._types_str()
         index_str    = ".".join(self._index())
         subindex_str = ".".join(self._subindex())
-        return f"<TomlerIterProxy.{self._kind}: {index_str}:{subindex_str} ({self._fallback}) <{type_str}> >"
+        return f"<TomlGuardIterProxy.{self._kind}: {index_str}:{subindex_str} ({self._fallback}) <{type_str}> >"
 
     def __call__(self, wrapper=None) -> TomlTypes:
         self._notify()
@@ -74,7 +74,7 @@ class TomlerIterProxy(TomlerProxy):
             case dict():
                 val = self._get_match()
             case _:
-                raise TypeError(f"Bad Kind of TomlerIterProxy: {self._kind}")
+                raise TypeError(f"Bad Kind of TomlGuardIterProxy: {self._kind}")
 
         wrapped = wrapper(val)
         return self._match_type(wrapped)
@@ -108,7 +108,7 @@ class TomlerIterProxy(TomlerProxy):
 
         base_index = ".".join(self._index())
         sub_index = ".".join(self._subindex())
-        raise TomlAccessError(f"TomlerIterProxy Failure: {base_index}[?].{sub_index}")
+        raise TomlAccessError(f"TomlGuardIterProxy Failure: {base_index}[?].{sub_index}")
 
     def _get_all(self) -> list[TomlTypes]:
         """
@@ -127,9 +127,9 @@ class TomlerIterProxy(TomlerProxy):
 
         base_index = ".".join(self._index())
         sub_index = ".".join(self._subindex())
-        raise TomlAccessError(f"TomlerIterProxy Failure: {base_index}[?].{sub_index}")
+        raise TomlAccessError(f"TomlGuardIterProxy Failure: {base_index}[?].{sub_index}")
 
-    def _get_flat(self) -> TomlerBase | list[TomlTypes]:
+    def _get_flat(self) -> GuardBase | list[TomlTypes]:
         match self._data:
             case [] | (None,):
                 pass
@@ -146,9 +146,9 @@ class TomlerIterProxy(TomlerProxy):
 
         base_index = ".".join(self._index())
         sub_index = ".".join(self._subindex())
-        raise TomlAccessError(f"TomlerIterProxy Failure: {base_index}[?].{sub_index}")
+        raise TomlAccessError(f"TomlGuardIterProxy Failure: {base_index}[?].{sub_index}")
 
-    def _get_match(self) -> TomlerBase | TomlTypes:
+    def _get_match(self) -> GuardBase | TomlTypes:
         """
         Get a table from an array if it matches a set of key=value pairs
         """
@@ -163,9 +163,9 @@ class TomlerIterProxy(TomlerProxy):
 
         base_index = ".".join(self._index())
         sub_index = ".".join(self._subindex())
-        raise TomlAccessError(f"TomlerIterProxy Match Failure: {base_index}[?].{sub_index} != {self._match}")
+        raise TomlAccessError(f"TomlGuardIterProxy Match Failure: {base_index}[?].{sub_index} != {self._match}")
 
-    def _inject(self, val=None, attr=None, clear=None) -> TomlerIterProxy:
+    def _inject(self, val=None, attr=None, clear=None) -> TomlGuardIterProxy:
         new_index = self._subindex()
         if attr:
             new_index.append(attr)
@@ -174,7 +174,7 @@ class TomlerIterProxy(TomlerProxy):
         if clear:
             val = None
 
-        return TomlerIterProxy(val, types=self._types, fallback=self._fallback, index=self._index(), subindex=new_index, kind=self._kind)
+        return TomlGuardIterProxy(val, types=self._types, fallback=self._fallback, index=self._index(), subindex=new_index, kind=self._kind)
 
     def _match_type(self, val:TomlTypes) -> TomlTypes:
         return val

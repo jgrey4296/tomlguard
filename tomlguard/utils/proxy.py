@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-A Proxy for Tomler,
+A Proxy for TomlGuard,
   which allows you to use the default attribute access
   (data.a.b.c)
   even when there might not be an `a.b.c` path in the data.
@@ -42,21 +42,21 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 from types import UnionType
-from tomler.utils.trace_helper import TraceHelper
-from tomler.base import TomlerBase
-from tomler.error import TomlAccessError
-from tomler.base import TomlTypes
+from tomlguard.utils.trace_helper import TraceHelper
+from tomlguard.base import GuardBase
+from tomlguard.error import TomlAccessError
+from tomlguard.base import TomlTypes
 
-class TomlerProxy:
+class TomlGuardProxy:
     """
     A Wrapper for guarded access to toml values.
     you get the value by calling it.
     Until then, it tracks attribute access,
-    and reports that to TomlerBase when called.
+    and reports that to GuardBase when called.
     It also can type check its value and the value retrieved from the toml data
     """
 
-    def __init__(self, data:TomlerBase, types:Any=None, index:list[str]|None=None, fallback:TomlTypes|None=None):
+    def __init__(self, data:GuardBase, types:Any=None, index:list[str]|None=None, fallback:TomlTypes|None=None):
         self._types                       = types or Any
         self._data                        = data
         self.__index : list[str]            = index or ["<root>"]
@@ -67,13 +67,13 @@ class TomlerProxy:
     def __repr__(self) -> str:
         type_str = self._types_str()
         index_str = ".".join(self._index())
-        return f"<TomlerProxy: {index_str}:{type_str}>"
+        return f"<TomlGuardProxy: {index_str}:{type_str}>"
 
     def __call__(self, wrapper:callable[[TomlTypes], Any]|None=None) -> Any:
         self._notify()
         wrapper : callable[[TomlTypes], TomlTypes] = wrapper or (lambda x: x)
         match self._data, self._fallback:
-            case TomlerBase(), _:
+            case GuardBase(), _:
                 val = self._data
             case (None,), None:
                 raise ValueError("No Value, and no fallback")
@@ -83,7 +83,7 @@ class TomlerProxy:
                 val = data
             case None, _:
                 val = None
-            case TomlerBase() as data, _:
+            case GuardBase() as data, _:
                 val = dict(data)
             case _ as data, _:
                 val = data
@@ -91,10 +91,10 @@ class TomlerProxy:
         wrapped = wrapper(val)
         return self._match_type(wrapped)
 
-    def __getattr__(self, attr:str) -> TomlerProxy:
+    def __getattr__(self, attr:str) -> TomlGuardProxy:
         try:
             match self._data:
-                case TomlerBase():
+                case GuardBase():
                     return self._inject(self._data[attr], attr=attr)
                 case None:
                     raise TomlAccessError()
@@ -103,7 +103,7 @@ class TomlerProxy:
         except TomlAccessError:
             return self._inject(clear=True, attr=attr)
 
-    def __getitem__(self, keys:str|tuple[str]) -> TomlerProxy:
+    def __getitem__(self, keys:str|tuple[str]) -> TomlGuardProxy:
         curr = self
         match keys:
             case tuple():
@@ -126,14 +126,14 @@ class TomlerProxy:
     def _notify(self) -> None:
         types_str = self._types_str()
         match self._data, self._fallback, self._index():
-            case TomlerBase(), _, _:
+            case GuardBase(), _, _:
                 pass
             case _, _, []:
                 pass
             case (None,), val, [*index]:
-                TomlerBase.add_defaulted(".".join(index), val, types_str)
+                GuardBase.add_defaulted(".".join(index), val, types_str)
             case val, _, [*index]:
-                TomlerBase.add_defaulted(".".join(index), val, types_str)
+                GuardBase.add_defaulted(".".join(index), val, types_str)
             case val, flbck, index,:
                 raise TypeError("Unexpected Values found: ", val, index, flbck)
 
@@ -148,7 +148,7 @@ class TomlerProxy:
 
         return types_str
 
-    def _inject(self, val:tuple[Any]=(None,), attr:str|None=None, clear:bool=False) -> TomlerProxy:
+    def _inject(self, val:tuple[Any]=(None,), attr:str|None=None, clear:bool=False) -> TomlGuardProxy:
         new_index = self._index()
         if attr:
             new_index.append(attr)
@@ -161,7 +161,7 @@ class TomlerProxy:
 
         if clear:
             val = (None,)
-        return TomlerProxy(val, types=self._types, index=new_index, fallback=self._fallback)
+        return TomlGuardProxy(val, types=self._types, index=new_index, fallback=self._fallback)
 
     def _match_type(self, val:TomlTypes) -> TomlTypes:
         if val == (None,):

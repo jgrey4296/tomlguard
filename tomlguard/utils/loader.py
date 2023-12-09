@@ -37,8 +37,8 @@ try:
 except ImportError:
     Self = Any
 
-from tomler.base import TomlTypes
-from tomler.error import TomlAccessError
+from tomlguard.base import TomlTypes
+from tomlguard.error import TomlAccessError
 
 try:
     # For py 3.11 onwards:
@@ -51,23 +51,23 @@ class LoaderMixin:
 
     @classmethod
     def read(cls, text:str) -> Self:
-        logging.debug("Reading Tomler for text")
+        logging.debug("Reading TomlGuard for text")
         try:
             return cls(toml.loads(text))
         except Exception as err:
-            raise IOError("Tomler Failed to Load: ", text, err.args) from err
+            raise IOError("TomlGuard Failed to Load: ", text, err.args) from err
 
     @classmethod
     def from_dict(cls, data:dict[str, TomlTypes]) -> Self:
-        logging.debug("Making Tomler from dict")
+        logging.debug("Making TomlGuard from dict")
         try:
             return cls(data)
         except Exception as err:
-            raise IOError("Tomler Failed to Load: ", data, err.args) from err
+            raise IOError("TomlGuard Failed to Load: ", data, err.args) from err
 
     @classmethod
     def load(cls, *paths:str|pl.Path) -> Self:
-        logging.debug("Creating Tomler for %s", paths)
+        logging.debug("Creating TomlGuard for %s", paths)
         try:
             texts = []
             for path in paths:
@@ -75,11 +75,11 @@ class LoaderMixin:
 
             return cls(toml.loads("\n".join(texts)))
         except Exception as err:
-            raise IOError("Tomler Failed to Load: ", paths, err.args) from err
+            raise IOError("TomlGuard Failed to Load: ", paths, err.args) from err
 
     @classmethod
     def load_dir(cls, dirp:str|pl.Path) -> Self:
-        logging.debug("Creating Tomler for directory: %s", str(dirp))
+        logging.debug("Creating TomlGuard for directory: %s", str(dirp))
         try:
             texts = []
             for path in pl.Path(dirp).glob("*.toml"):
@@ -87,4 +87,4 @@ class LoaderMixin:
 
             return cls(toml.loads("\n".join(texts)))
         except Exception as err:
-            raise IOError("Tomler Failed to Directory: ", dirp, err.args) from err
+            raise IOError("TomlGuard Failed to Directory: ", dirp, err.args) from err

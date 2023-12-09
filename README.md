@@ -1,4 +1,4 @@
-# toml_config
+# TomlGuard
 Author: John Grey
 Date  : 2022-12-06
 
@@ -23,16 +23,16 @@ friends = ["bill", "jill", "jim"]
 
 ``` python
 import pathlib as pl
-import tomler
+import tomlguard as TG
 
-data = tomler.load("basic.toml")
+data = TG.load("basic.toml")
 # Or load all tomls concatenated together:
-# data = tomler.load_dir(pl.Path())
-                                                        
+# data = TG.load_dir(pl.Path())
+
 print(data.person.name)    # -> bob
 print(data.person.age)     # -> 26
 print(data.person.friends) # -> ["bill", "jill", "jim"]
-                                                        
+
 print(data.on_fail("Fallback", str).this.doesnt.exist()) # -> "Fallback"
 print(data.on_fail("bill?").person.name()) # -> bob
 
@@ -41,8 +41,7 @@ try:
 except TypeError:
     print("Type Mismatch")
 
-print(tomler.Tomler.report_defaulted()) # -> ['this.doesnt.exist = "Fallback" # <str>']
+print(TG.TomlGuard.report_defaulted()) # -> ['this.doesnt.exist = "Fallback" # <str>']
 
 # TODO: explain all_of, any_of, match_on for multi-tables
 ```
-
