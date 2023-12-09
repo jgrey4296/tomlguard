@@ -5,13 +5,17 @@ description     = ""
 readme          = "README.md"
 requires-python = ">=3.10"
 license         = {file = "LICENSE"}
-keywords        = []
+keywords        = ["toml"]
 authors         = [
   {email = "jgrey.n.plus.one@gmail.com"},
   {name  = "John Grey"}
 ]
 classifiers     = [
-  "Programming Language :: Python"
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Development Status :: 3 - Alpha",
+  "Topic :: Utilities",
 ]
 
 ##-- dependencies
@@ -30,10 +34,10 @@ test = [
 
 ##-- urls
 [project.urls]
-homepage      = "https://github.com/jgrey4296/toml_config"
-documentation = "https://readthedocs.org/toml_config"
-repository    = "https://github.com/jgrey4296/toml_config"
-changelog     = "https://github.com//toml_config/blob/master/CHANGELOG.md"
+homepage      = "https://github.com/jgrey4296/tomlguard"
+documentation = "https://github.com/jgrey4296/tomlguard/wiki"
+repository    = "https://github.com/jgrey4296/tomlguard"
+changelog     = "https://github.com//jgrey4296/tomlguard/blob/master/CHANGELOG.md"
 
 ##-- end urls
 
