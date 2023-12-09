@@ -13,7 +13,7 @@ file   = { level = "DEBUG", format = "{levelname:<8} : {message:<20} : ({module}
 ignores  = ['.git', '.DS_Store', "__pycache__"]
 
 [[directories]]
-src          = "tomler"
+src          = "tomlguard"
 build        = "build"
 docs         = "docs"
 data         = "data"

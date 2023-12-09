@@ -14,7 +14,7 @@
   ],
   "ignore": [],
   "include": [
-    "tomler"
+    "tomlguard"
   ],
   "pythonPlatform"                       : "Darwin",
   "pythonVersion"                        : "3.11",

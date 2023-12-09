@@ -1,5 +1,5 @@
 [project]
-name            = "tomler"
+name            = "tomlguard"
 version         = "0.1.0"
 description     = ""
 readme          = "README.md"
@@ -15,14 +15,15 @@ classifiers     = [
 ]
 
 ##-- dependencies
-dependencies   = []
+dependencies   = [
+    "toml; python_version<'3.11'",
+     "tomli-w",
+]
 
 [project.optional-dependencies]
 test = [
      "pytest > 7.0.0",
-]
-write = [
-     "toml-w"
+     "pytest-mock",
 ]
 
 ##-- end dependencies
@@ -56,7 +57,7 @@ include-package-data = true
 [tool.setuptools.packages.find]
 namespaces = true
 where      = ["."]
-include    = ["tomler*"]
+include    = ["tomlguard*"]
 
 [tool.setuptools.package-data]
 "*" = ["*"]

@@ -23,9 +23,15 @@ import weakref
 import typing
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
+                    Protocol, Sequence, Tuple, TypeVar,
                     cast, final, overload, runtime_checkable)
 from uuid import UUID, uuid1
+
+try:
+    # for py 3.10 onwards:
+    from typing import TypeAlias
+except ImportError:
+    TypeAlias = Any
 
 ##-- end builtin imports
 
@@ -33,18 +39,17 @@ from uuid import UUID, uuid1
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from types import NoneType
 from collections.abc import Mapping, ItemsView, KeysView, ValuesView
-from tomler.error import TomlAccessError
+from tomlguard.error import TomlAccessError
 
 super_get = object.__getattribute__
 super_set = object.__setattr__
 
 TomlTypes : TypeAlias = str | int | float | bool | list['TomlTypes'] | dict[str,'TomlTypes'] | datetime.datetime
 
-class TomlerBase(Mapping[str, TomlTypes]):
+class GuardBase(Mapping[str, TomlTypes]):
     """
-    Provides access to toml data (Tomler.load(apath))
+    Provides access to toml data (TomlGuard.load(apath))
     but as attributes (data.a.path.in.the.data)
     instead of key access (data['a']['path']['in']['the']['data'])
 
@@ -75,14 +80,14 @@ class TomlerBase(Mapping[str, TomlTypes]):
             case _, _:
                 raise TypeError("Unexpected Values found: ", val, index)
 
-        TomlerBase._defaulted.add(index_str)
+        GuardBase._defaulted.add(index_str)
 
     @staticmethod
     def report_defaulted() -> list[str]:
         """
         Report the index paths inject default values
         """
-        return list(TomlerBase._defaulted)
+        return list(GuardBase._defaulted)
 
     def __init__(self, data:dict[str,TomlTypes]=None, *, index:None|list[str]=None, mutable:bool=False):
         super_set(self, "__table", data or {})
@@ -90,14 +95,14 @@ class TomlerBase(Mapping[str, TomlTypes]):
         super_set(self, "__mutable" , mutable)
 
     def __repr__(self) -> str:
-        return f"<Tomler:{list(self.keys())}>"
+        return f"<TomlGuard:{list(self.keys())}>"
 
     def __setattr__(self, attr:str, value:TomlTypes) -> None:
         if not getattr(self, "__mutable"):
             raise TypeError()
         super_set(self, attr, value)
 
-    def __getattr__(self, attr:str) -> TomlerBase | TomlTypes | list[TomlerBase]:
+    def __getattr__(self, attr:str) -> GuardBase | TomlTypes | list[GuardBase]:
         table = self._table()
 
         if attr not in table and attr.replace("_", "-") not in table:
@@ -132,7 +137,7 @@ class TomlerBase(Mapping[str, TomlTypes]):
         return len(self._table())
 
     def __call__(self) -> TomlTypes:
-        raise TomlAccessError("Don't call a Tomler, call a TomlerProxy")
+        raise TomlAccessError("Don't call a TomlGuard, call a TomlGuardProxy")
 
     def __iter__(self):
         return iter(getattr(self, "__table").items())

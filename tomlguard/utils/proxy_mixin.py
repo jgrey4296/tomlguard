@@ -21,7 +21,7 @@ import weakref
 # from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
+                    Protocol, Sequence, Tuple, TypeVar,
                     cast, final, overload, runtime_checkable)
 from uuid import UUID, uuid1
 
@@ -31,13 +31,13 @@ from uuid import UUID, uuid1
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from tomler.utils.proxy import TomlerProxy
-from tomler.utils.iter_proxy import TomlerIterProxy
-from tomler.error import TomlAccessError
+from tomlguard.utils.proxy import TomlGuardProxy
+from tomlguard.utils.iter_proxy import TomlGuardIterProxy
+from tomlguard.error import TomlAccessError
 
-class ProxyEntryMixin:
+class GuardProxyEntryMixin:
 
-    def on_fail(self, fallback:Any, types:Any|None=None) -> TomlerProxy:
+    def on_fail(self, fallback:Any, types:Any|None=None) -> TomlGuardProxy:
         """
         use a fallback value in an access chain,
         eg: doot.config.on_fail("blah").this.doesnt.exist() -> "blah"
@@ -48,9 +48,9 @@ class ProxyEntryMixin:
         if index != ["<root>"]:
             raise TomlAccessError("On Fail not declared at entry", index)
 
-        return TomlerProxy(self, types=types, fallback=fallback)
+        return TomlGuardProxy(self, types=types, fallback=fallback)
 
-    def first_of(self, fallback:Any, types:Any|None=None) -> TomlerIterProxy:
+    def first_of(self, fallback:Any, types:Any|None=None) -> TomlGuardIterProxy:
         """
         get the first value from a index path, even across arrays of tables
         so instead of: data.a.b.c[0].d
@@ -61,17 +61,17 @@ class ProxyEntryMixin:
         if index != ["<root>"]:
             raise TomlAccessError("Any Of not declared at entry", index)
 
-        return TomlerIterProxy(self, fallback=fallback, types=types, kind="any")
+        return TomlGuardIterProxy(self, fallback=fallback, types=types, kind="any")
 
-    def all_of(self, fallback:Any, types:Any|None=None) -> TomlerIterProxy:
+    def all_of(self, fallback:Any, types:Any|None=None) -> TomlGuardIterProxy:
         index = self._index()[:]
 
         if index != ["<root>"]:
             raise TomlAccessError("All Of not declared at entry", index)
 
-        return TomlerIterProxy(self, fallback=fallback, kind="all")
+        return TomlGuardIterProxy(self, fallback=fallback, kind="all")
 
-    def flatten_on(self, fallback:Any) -> TomlerIterProxy:
+    def flatten_on(self, fallback:Any) -> TomlGuardIterProxy:
         """
         combine all dicts at the call site to form a single dict
         """
@@ -83,10 +83,10 @@ class ProxyEntryMixin:
         if index != ["<root>"]:
             raise TomlAccessError("Flatten On not declared at entry", index)
 
-        return TomlerIterProxy(self, fallback=fallback, kind="flat")
+        return TomlGuardIterProxy(self, fallback=fallback, kind="flat")
 
-    def match_on(self, **kwargs:tuple[str,Any]) -> TomlerIterProxy:
+    def match_on(self, **kwargs:tuple[str,Any]) -> TomlGuardIterProxy:
         index = self._table()[:]
         if index != ["<root>"]:
             raise TomlAccessError("Match On not declared at entry", index)
-        return TomlerIterProxy(self, fallback=kwargs, kind="match")
+        return TomlGuardIterProxy(self, fallback=kwargs, kind="match")
