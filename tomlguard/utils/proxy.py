@@ -31,7 +31,7 @@ import weakref
 # from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeVar,
+                    Protocol, Sequence, Tuple, TypeVar, NoReturn,
                     cast, final, overload, runtime_checkable)
 from uuid import UUID, uuid1
 
@@ -47,6 +47,8 @@ from tomlguard.base import GuardBase
 from tomlguard.error import TomlAccessError
 from tomlguard.base import TomlTypes
 
+NullFallback = NoReturn
+
 class TomlGuardProxy:
     """
     A Wrapper for guarded access to toml values.
@@ -56,11 +58,11 @@ class TomlGuardProxy:
     It also can type check its value and the value retrieved from the toml data
     """
 
-    def __init__(self, data:GuardBase, types:Any=None, index:list[str]|None=None, fallback:TomlTypes|None=None):
-        self._types                       = types or Any
-        self._data                        = data
+    def __init__(self, data:GuardBase, types:Any=None, index:list[str]|None=None, fallback:TomlTypes|NullFallback=NullFallback):
+        self._types                         = types or Any
+        self._data                          = data
         self.__index : list[str]            = index or ["<root>"]
-        self._fallback                    = fallback
+        self._fallback                      = fallback
         if fallback:
             self._match_type(fallback)
 
@@ -69,39 +71,55 @@ class TomlGuardProxy:
         index_str = ".".join(self._index())
         return f"<TomlGuardProxy: {index_str}:{type_str}>"
 
-    def __call__(self, wrapper:callable[[TomlTypes], Any]|None=None) -> Any:
+    def __call__(self, wrapper:callable[[TomlTypes], Any]|None=None, fallback_wrapper:callable[[TomlTypes], Any]|None=None) -> Any:
+        """
+        Reify a proxy into an actual value, or its fallback.
+        Optionally call a wrapper function on the actual value,
+        or a fallback_wrapper function on the fallback
+        """
         self._notify()
         wrapper : callable[[TomlTypes], TomlTypes] = wrapper or (lambda x: x)
+        fallback_wrapper                           = fallback_wrapper or (lambda x: x)
         match self._data, self._fallback:
-            case GuardBase(), _:
-                val = self._data
-            case (None,), None:
+            case x, y if x is NullFallback and y is NullFallback:
                 raise ValueError("No Value, and no fallback")
-            case (None,), (None,):
+            case x, None if x is NullFallback or x is None:
                 val = None
-            case (None,), data:
-                val = data
-            case None, _:
-                val = None
+            case x, data if x is NullFallback or x is None:
+                val = fallback_wrapper(data)
             case GuardBase() as data, _:
-                val = dict(data)
+                val = wrapper(dict(data))
             case _ as data, _:
-                val = data
+                val = wrapper(data)
 
-        wrapped = wrapper(val)
-        return self._match_type(wrapped)
+        return self._match_type(val)
 
     def __getattr__(self, attr:str) -> TomlGuardProxy:
         try:
             match self._data:
+                case x if x is NullFallback:
+                    raise TomlAccessError()
                 case GuardBase():
                     return self._inject(self._data[attr], attr=attr)
-                case None:
-                    raise TomlAccessError()
                 case _:
                     return self._inject(attr=attr)
         except TomlAccessError:
             return self._inject(clear=True, attr=attr)
+
+    def _inject(self, val:tuple[Any]=NullFallback, attr:str|None=None, clear:bool=False) -> TomlGuardProxy:
+        match val:
+            case _ if clear:
+                val = NullFallback
+            case x if x is NullFallback:
+                val = self._data
+            case _:
+                pass
+
+        return TomlGuardProxy(val,
+                              types=self._types,
+                              index=self._index(attr),
+                              fallback=self._fallback)
+
 
     def __getitem__(self, keys:str|tuple[str]) -> TomlGuardProxy:
         curr = self
@@ -121,7 +139,7 @@ class TomlGuardProxy:
         return 0
 
     def __bool__(self) -> bool:
-        return self._data is not None
+        return self._data is not None and self._data is not NullFallback
 
     def _notify(self) -> None:
         types_str = self._types_str()
@@ -130,7 +148,7 @@ class TomlGuardProxy:
                 pass
             case _, _, []:
                 pass
-            case (None,), val, [*index]:
+            case x , val, [*index] if x is NullFallback:
                 GuardBase.add_defaulted(".".join(index), val, types_str)
             case val, _, [*index]:
                 GuardBase.add_defaulted(".".join(index), val, types_str)
@@ -148,25 +166,7 @@ class TomlGuardProxy:
 
         return types_str
 
-    def _inject(self, val:tuple[Any]=(None,), attr:str|None=None, clear:bool=False) -> TomlGuardProxy:
-        new_index = self._index()
-        if attr:
-            new_index.append(attr)
-
-        match val:
-            case (None,):
-                val = self._data
-            case _:
-                pass
-
-        if clear:
-            val = (None,)
-        return TomlGuardProxy(val, types=self._types, index=new_index, fallback=self._fallback)
-
     def _match_type(self, val:TomlTypes) -> TomlTypes:
-        if val == (None,):
-            val = None
-
         if self._types != Any and not isinstance(val, self._types):
             types_str = self._types_str()
             index_str  = ".".join(self.__index + ['(' + types_str + ')'])
@@ -175,8 +175,7 @@ class TomlGuardProxy:
 
         return val
 
-    def _index(self) -> list[str]:
-        return self.__index[:]
-
-    def _update_index(self, attr:str) -> None:
-        self.__index.append(attr)
+    def _index(self, sub:str=None) -> list[str]:
+        if sub is None:
+            return self.__index[:]
+        return self.__index[:] + [sub]

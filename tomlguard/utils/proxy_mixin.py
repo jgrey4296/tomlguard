@@ -32,10 +32,15 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 from tomlguard.utils.proxy import TomlGuardProxy
-from tomlguard.utils.iter_proxy import TomlGuardIterProxy
+from tomlguard.utils import iter_proxy
 from tomlguard.error import TomlAccessError
 
 class GuardProxyEntryMixin:
+    """ A Mixin to add to GuardBase.
+    enables handling a number of conditions when accessing values in the underlying data.
+    eg:
+    tg.on_fail(2, int).a.value() # either get a.value, or 2. whichever returns has to be an int.
+    """
 
     def on_fail(self, fallback:Any, types:Any|None=None) -> TomlGuardProxy:
         """
@@ -52,7 +57,7 @@ class GuardProxyEntryMixin:
 
     def first_of(self, fallback:Any, types:Any|None=None) -> TomlGuardIterProxy:
         """
-        get the first value from a index path, even across arrays of tables
+        get the first non-None value from a index path, even across arrays of tables
         so instead of: data.a.b.c[0].d
         just:          data.first_of().a.b.c.d()
         """
@@ -61,20 +66,22 @@ class GuardProxyEntryMixin:
         if index != ["<root>"]:
             raise TomlAccessError("Any Of not declared at entry", index)
 
-        return TomlGuardIterProxy(self, fallback=fallback, types=types, kind="any")
+        return iter_proxy.TomlGuardIterFirstProxy(self, fallback=fallback, types=types)
 
     def all_of(self, fallback:Any, types:Any|None=None) -> TomlGuardIterProxy:
+        raise NotImplementedError()
         index = self._index()[:]
 
         if index != ["<root>"]:
             raise TomlAccessError("All Of not declared at entry", index)
 
-        return TomlGuardIterProxy(self, fallback=fallback, kind="all")
+        return iter_proxy.TomlGuardIterAllProxy(self, fallback=fallback)
 
     def flatten_on(self, fallback:Any) -> TomlGuardIterProxy:
         """
         combine all dicts at the call site to form a single dict
         """
+        raise NotImplementedError()
         if not isinstance(fallback, (type(None), dict)):
             raise TypeError()
 
@@ -83,10 +90,11 @@ class GuardProxyEntryMixin:
         if index != ["<root>"]:
             raise TomlAccessError("Flatten On not declared at entry", index)
 
-        return TomlGuardIterProxy(self, fallback=fallback, kind="flat")
+        return iter_proxy.TomlGuardIterFlatProxy(self, fallback=fallback)
 
     def match_on(self, **kwargs:tuple[str,Any]) -> TomlGuardIterProxy:
+        raise NotImplementedError()
         index = self._table()[:]
         if index != ["<root>"]:
             raise TomlAccessError("Match On not declared at entry", index)
-        return TomlGuardIterProxy(self, fallback=kwargs, kind="match")
+        return iter_proxy.TomlGuardIterMatchProxy(self, fallback=kwargs)
