@@ -169,8 +169,10 @@ class GuardBase(Mapping[str, TomlTypes]):
                 return val.items()
             case list() as val:
                 return dict({self._index()[-1]: val}).items()
-            case _:
-                raise TypeError()
+            case GuardBase() as val:
+                return val.items()
+            case x:
+                raise TypeError("Unknown table type", x)
 
     def values(self) -> ValuesView[TomlTypes]:
         # match object.__getattribute__(self, "__table"):
