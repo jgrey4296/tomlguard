@@ -62,9 +62,13 @@ class TomlGuardProxy:
         self._types                         = types or Any
         self._data                          = data
         self.__index : list[str]            = index or ["<root>"]
-        self._fallback                      = fallback
+        if fallback == (None,):
+            self._fallback = None
+        else:
+            self._fallback = fallback
+
         if fallback:
-            self._match_type(fallback)
+            self._match_type(self._fallback)
 
     def __repr__(self) -> str:
         type_str = self._types_str()
