@@ -1,21 +1,30 @@
-verbosity                = 2
-default_tasks            = ["locs::report"]
-action_string_formatting = "new"
-subtask                  = { sleep = 1 }
-batch                    = { sleep = 1 }
+# -*- mode:conf-toml; -*-
+[settings.general]
 notify                   = { say-on-exit = false }
+loaders                  = { commands="default", task="default", parser="default"}
+location_check           = { make_missing = true, print_levels={action="WARN", execute="WARN" } }
+max_steps                = 100_000
+
+[settings.tasks]
+sources = [".tasks"] # Files or directories where task specs can be loaded from, expanded according to [[locations]] keys
+code    = []         # Directories where task specific code can be imported from, expanded according to [[locations]] keys
+sleep   = { task=0.2, subtask=1, batch=1 }
 
 [logging]
-stream = { level = "INFO", format  = "{levelname:<8} : {message}", filters = ["doot", "bkmkorg"] }
-file   = { level = "DEBUG", format = "{levelname:<8} : {message:<20} : ({module}.{lineno}.{funcName})", filters =  ["doot", "bkmkorg"] }
+stream  = { level="WARN",  allow=["doot"], format="{levelname:<8} : {message}", colour=true }
+file    = { level="DEBUG", allow=["doot"], format="{levelname:<8} : {message:<20} :|: (module:{module} line:{lineno} fn:{funcName})" }
+printer = { level="INFO", colour=true}
 
-[globbing]
-ignores  = ['.git', '.DS_Store', "__pycache__"]
+[plugins]
+# Allows for defining shorthands
+command        = { other-run = "doot.cmds.run_cmd:RunCmd", tasks = "doot.cmds.list_cmd:ListCmd" }
+report-line    = {}
+reporter       = {}
+action         = {}
+task           = {}
 
-[[directories]]
-src          = "tomlguard"
-build        = "build"
-docs         = "docs"
-data         = "data"
+[commands]
+run = { tracker = "default", runner = "default", reporter= "default", report-line = []}
 
-[group.pip]
+
+[locations]
