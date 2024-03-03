@@ -97,10 +97,10 @@ class TomlGuard(GuardBase, GuardProxyEntryMixin, LoaderMixin, WriterMixin):
             case str():
                 logging.debug("Removing prefix from data: %s", prefix)
                 try:
-                    attempt = data
+                    attempt = self
                     for x in prefix.split("."):
                         attempt = attempt[x]
                     else:
-                        return TG.TomlGuard(attempt)
-                except TG.TomlAccessError:
-                    return data
+                        return TomlGuard(attempt)
+                except TomlAccessError:
+                    return self
