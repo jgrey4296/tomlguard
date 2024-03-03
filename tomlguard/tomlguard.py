@@ -85,3 +85,22 @@ class TomlGuard(GuardBase, GuardProxyEntryMixin, LoaderMixin, WriterMixin):
             curr_keys |= new_keys
 
         return TomlGuard.from_dict(ChainMap(*(dict(x) for x in tomlguards)))
+
+    def remove_prefix(self, prefix) -> TomlGuard:
+        """ Try to remove a prefix from loaded data
+          eg: TomlGuard(tools.tomlguard.data..).remove_prefix("tools.tomlguard")
+          -> TomlGuard(data..)
+        """
+        match prefix:
+            case None:
+                return self
+            case str():
+                logging.debug("Removing prefix from data: %s", prefix)
+                try:
+                    attempt = self
+                    for x in prefix.split("."):
+                        attempt = attempt[x]
+                    else:
+                        return TomlGuard(attempt)
+                except TomlAccessError:
+                    return self

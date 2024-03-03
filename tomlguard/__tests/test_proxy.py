@@ -26,26 +26,26 @@ class TestProxy:
     def test_attr(self):
         proxy = TomlGuardProxy(None, fallback=2)
         accessed = proxy.blah.bloo
-        assert(repr(accessed) == "<TomlGuardProxy: <root>.blah.bloo:typing.Any>")
-        assert(repr(proxy) == "<TomlGuardProxy: <root>:typing.Any>")
+        assert(repr(accessed) == "<TomlGuardProxy: <root>.blah.bloo:Any>")
+        assert(repr(proxy) == "<TomlGuardProxy: <root>:Any>")
 
     def test_item(self):
         proxy    = TomlGuardProxy(None, fallback=2)
         accessed = proxy['blah']['bloo']
-        assert(repr(accessed) == "<TomlGuardProxy: <root>.blah.bloo:typing.Any>")
-        assert(repr(proxy) == "<TomlGuardProxy: <root>:typing.Any>")
+        assert(repr(accessed) == "<TomlGuardProxy: <root>.blah.bloo:Any>")
+        assert(repr(proxy) == "<TomlGuardProxy: <root>:Any>")
 
     def test_multi_item(self):
         proxy    = TomlGuardProxy(None, fallback=2)
         accessed = proxy['blah', 'bloo']
-        assert(repr(proxy) == "<TomlGuardProxy: <root>:typing.Any>")
-        assert(repr(accessed) == "<TomlGuardProxy: <root>.blah.bloo:typing.Any>")
+        assert(repr(proxy) == "<TomlGuardProxy: <root>:Any>")
+        assert(repr(accessed) == "<TomlGuardProxy: <root>.blah.bloo:Any>")
 
     def test_multi_item_expansion(self):
         proxy       = TomlGuardProxy(None, fallback=2)
         access_list = ["blah", "bloo"]
         accessed = proxy["blah", "bloo"]
-        assert(repr(accessed) == "<TomlGuardProxy: <root>.blah.bloo:typing.Any>")
+        assert(repr(accessed) == "<TomlGuardProxy: <root>.blah.bloo:Any>")
 
     @pytest.mark.skip(reason="FIXME")
     def test_multi_item_star_expansion(self):
@@ -54,7 +54,7 @@ class TestProxy:
         access_list = ["blah", "bloo"]
         # accessed    = proxy[*access_list]
         accessed = []
-        assert(repr(accessed) == "<TomlGuardProxy: <root>.blah.bloo:typing.Any>")
+        assert(repr(accessed) == "<TomlGuardProxy: <root>.blah.bloo:Any>")
 
     def test_call_get_value(self):
         proxy = TomlGuardProxy(5, fallback=2)
