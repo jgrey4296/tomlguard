@@ -127,8 +127,8 @@ class TestProxiedTomlGuard:
         base.on_fail(False).test.blah.other()
 
         defaulted = TomlGuard.report_defaulted()
-        assert("<root>.this.doesnt.exist = false # <typing.Any>" in defaulted)
-        assert("<root>.test.blah.other = false # <typing.Any>" in defaulted)
+        assert("<root>.this.doesnt.exist = false # <Any>" in defaulted)
+        assert("<root>.test.blah.other = false # <Any>" in defaulted)
 
     def test_proxied_report_missing_typed_values(self, mocker):
         mocker.patch.object(GuardBase, "_defaulted", set())
