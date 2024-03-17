@@ -7,7 +7,7 @@ from .base   import TomlTypes
 
 __all__     = ["TomlAccessError", "TomlGuard", "load"]
 
-__version__ : Final[str] = "0.3.0"
+__version__ : Final[str] = "0.4.0"
 
 load        = TomlGuard.load
 load_dir    = TomlGuard.load_dir
