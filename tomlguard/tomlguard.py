@@ -72,7 +72,7 @@ class TomlGuard(GuardBase, GuardProxyEntryMixin, LoaderMixin, WriterMixin):
     @classmethod
     def merge(cls, *tomlguards:Self, dfs:callable=None, index=None, shadow=False) -> Self:
         """
-        Given an ordered list of tomlguards, convert them to dicts,
+        Given an ordered list of tomlguards and dicts, convert them to dicts,
         update an empty dict with each,
         then wrap that combined dict in a tomlguard
         # TODO if given a dfs callable, use it to merge more intelligently
