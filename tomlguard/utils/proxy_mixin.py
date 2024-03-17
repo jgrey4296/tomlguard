@@ -42,7 +42,7 @@ class GuardProxyEntryMixin:
     tg.on_fail(2, int).a.value() # either get a.value, or 2. whichever returns has to be an int.
     """
 
-    def on_fail(self, fallback:Any, types:Any|None=None) -> TomlGuardProxy:
+    def on_fail(self, fallback:Any, types:Any|None=None, non_root=False) -> TomlGuardProxy:
         """
         use a fallback value in an access chain,
         eg: doot.config.on_fail("blah").this.doesnt.exist() -> "blah"
@@ -50,7 +50,7 @@ class GuardProxyEntryMixin:
         *without* throwing a TomlAccessError
         """
         index = self._index()
-        if index != ["<root>"]:
+        if index != ["<root>"] and not non_root:
             raise TomlAccessError("On Fail not declared at entry", index)
 
         return TomlGuardProxy(self, types=types, fallback=fallback)
