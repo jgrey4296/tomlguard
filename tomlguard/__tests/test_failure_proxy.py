@@ -15,9 +15,9 @@ from typing import (Any, Callable, ClassVar, Generic, Iterable, Iterator,
 logging = logmod.root
 
 import pytest
-from tomlguard.utils.proxy import TomlGuardProxy
+from tomlguard.utils.failure_proxy import TomlGuardFailureProxy
 
-class TestProxy:
+class TestFailureProxy:
 
     def test_initial(self):
         proxy = TomlGuardProxy(None, fallback=2)

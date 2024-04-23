@@ -49,7 +49,7 @@ from tomlguard.base import TomlTypes
 
 NullFallback = NoReturn
 
-class TomlGuardProxy:
+class TomlGuardFailureProxy:
     """
     A Wrapper for guarded access to toml values.
     you get the value by calling it.
@@ -110,21 +110,6 @@ class TomlGuardProxy:
         except TomlAccessError:
             return self._inject(clear=True, attr=attr)
 
-    def _inject(self, val:tuple[Any]=NullFallback, attr:str|None=None, clear:bool=False) -> TomlGuardProxy:
-        match val:
-            case _ if clear:
-                val = NullFallback
-            case x if x is NullFallback:
-                val = self._data
-            case _:
-                pass
-
-        return TomlGuardProxy(val,
-                              types=self._types,
-                              index=self._index(attr),
-                              fallback=self._fallback)
-
-
     def __getitem__(self, keys:str|tuple[str]) -> TomlGuardProxy:
         curr = self
         match keys:
@@ -144,6 +129,20 @@ class TomlGuardProxy:
 
     def __bool__(self) -> bool:
         return self._data is not None and self._data is not NullFallback
+
+    def _inject(self, val:tuple[Any]=NullFallback, attr:str|None=None, clear:bool=False) -> TomlGuardProxy:
+        match val:
+            case _ if clear:
+                val = NullFallback
+            case x if x is NullFallback:
+                val = self._data
+            case _:
+                pass
+
+        return TomlGuardProxy(val,
+                              types=self._types,
+                              index=self._index(attr),
+                              fallback=self._fallback)
 
     def _notify(self) -> None:
         types_str = self._types_str()
