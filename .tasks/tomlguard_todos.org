@@ -1,12 +1,19 @@
 #+TITLE: Tomlguard Todos
+#+STARTUP: agenda
 
 * tomlguard
+** [∅] docs
+
 ** QUEUED tomlguard proxies
+:PROPERTIES:
+:ARCHIVE_TIME: 2024-06-01 Sat 19:39
+:ARCHIVE_FILE: /media/john/data/github/python/tomlguard/.tasks/tomlguard_todos.org
+:ARCHIVE_OLPATH: tomlguard
+:ARCHIVE_CATEGORY: tomlguard_todos
+:ARCHIVE_TODO: QUEUED
+:END:
 *** first_of
 *** all_of
 *** flatten_on
 *** match_on
-** docs
-
-
 * Links
