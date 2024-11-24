@@ -75,15 +75,21 @@ class TomlGuard(GuardBase, GuardProxyEntryMixin, LoaderMixin, WriterMixin):
         Given an ordered list of tomlguards and dicts, convert them to dicts,
         update an empty dict with each,
         then wrap that combined dict in a tomlguard
+
+        *NOTE*: classmethod, not instance. search order is same as arg order.
+        So merge(a, b, c) will retrive from c only if a, then b, don't have the key
+
         # TODO if given a dfs callable, use it to merge more intelligently
         """
         curr_keys = set()
+        # Check for conflicts:
         for data in tomlguards:
             new_keys = set(data.keys())
             if bool(curr_keys & new_keys) and not shadow:
                 raise KeyError("Key Conflict:", curr_keys & new_keys)
             curr_keys |= new_keys
 
+        # Build a TG from a chainmap
         return TomlGuard.from_dict(ChainMap(*(dict(x) for x in tomlguards)))
 
     def remove_prefix(self, prefix) -> TomlGuard:

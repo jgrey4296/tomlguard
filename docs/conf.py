@@ -1,75 +1,97 @@
+#!/usr/bin/env python3
 # Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
+# documentation root, use pl.Path.resolve to make it absolute, like shown here.
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../toml_config'))
+import pathlib as pl
+sys.path.insert(0, pl.Path('../').resolve())
 
-import warnings
+# (Relative to this file):
+templates_path   = ['_templates']
+html_static_path = ['_static']
 
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    import toml_config
-    acab.setup()
-
-# -- Project information -----------------------------------------------------
-
-project   = 'toml_config'
-copyright = "2022-12-06"
-author    = 'John Grey'
-
-# -- General configuration ---------------------------------------------------
-
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
-extensions = ['sphinx.ext.doctest',
-              'sphinx.ext.autodoc',
-              'sphinx.ext.autosummary',
-              'sphinx.ext.napoleon']
-
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# Relative to static dir, or fully qualified urls
+html_css_files = ["custom.css"]
+html_js_files  = []
+# html_style = "custom.css"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['**/flycheck_*.py']
+exclude_patterns = ['**/flycheck_*.py', "**/__tests/*"]
 
-autosummary_generate = True
+# -- Project information -----------------------------------------------------
 
-autodoc_default_options = {
-    'members'       : True,
-    'undoc-members' : True,
-    # 'private-members': True,
-    # 'special-members': True,
-    'inherited-members': True,
-    'show-inheritance' : True,
-    }
-add_module_names = False
-autodoc_inherit_docstrings = True
+project   = 'tomlguard'
+copyright = '2024, John Grey'
+author    = 'John Grey'
+release   = '0.13.0'
+
+# -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+extensions = [
+    'sphinx.ext.doctest',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.extlinks',
+    'sphinx_rtd_theme'
+    ]
 
 # -- Options for HTML output -------------------------------------------------
+html_theme       = "sphinx_rtd_theme"
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
-html_theme = 'alabaster'
+##-- alabaster options
+# https://alabaster.readthedocs.io/en/latest/index.html
+extlinks         = {}
+html_sidebars    = {
+    "**": [
+        "about.html",
+        "searchfield.html",
+        "navigation.html",
+        "relations.html",
+    ]
+}
 
 html_theme_options = {
+    "description": "Doot, a simple TOML based task runner",
+    "github_user": "jgrey4296",
+    "github_repo": "doot",
+    "fixed_sidebar": True,
+    "github_banner": False,
+    "show_related" : True,
+}
 
-    }
+##-- end alabaster
 
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+##-- rtd options
+# https://sphinx-rtd-theme.readthedocs.io/en/stable/configuring.html
+
+html_theme_options = {
+    'logo_only'                   : False,
+    'display_version'             : True,
+    'prev_next_buttons_location'  : 'bottom',
+    'style_external_links'        : False,
+    'vcs_pageview_mode'           : '',
+    'style_nav_header_background' : 'grey',
+    # TOC options:
+    'collapse_navigation'         : True,
+    'sticky_navigation'           : True,
+    'navigation_depth'            : 4,
+    'includehidden'               : True,
+    'titles_only'                 : False
+
+}
+
+##-- end rtd options
+
+# Imports --------------------------------------------------
+ # import tomlguard

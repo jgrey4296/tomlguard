@@ -172,3 +172,33 @@ class TestTomlGuardMerge:
 
         merged = TomlGuard.merge(first ,second, shadow=True)
         assert(dict(merged) == {"a":2, "b": 5})
+
+
+class TestFailAccess:
+
+    def test_basic(self):
+        obj = TomlGuard({})
+        assert(obj is not  None)
+
+    def test_basic_fail(self):
+        obj = TomlGuard({})
+        result = obj.on_fail(5).nothing()
+        assert(result == 5)
+
+
+    def test_fail_access_dict(self):
+        obj = TomlGuard({"nothing": {}})
+        result = obj.on_fail({}).nothing['blah']()
+        assert(isinstance(result, dict))
+
+
+    def test_fail_access_list(self):
+        obj = TomlGuard({"nothing": []})
+        result = obj.on_fail([]).nothing[1]()
+        assert(isinstance(result, list))
+
+
+    def test_fail_access_type_mismatch(self):
+        obj = TomlGuard({"nothing": {}})
+        result = obj.on_fail({}).nothing[1]()
+        assert(isinstance(result, dict))
