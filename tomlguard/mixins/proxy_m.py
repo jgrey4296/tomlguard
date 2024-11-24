@@ -31,10 +31,11 @@ from uuid import UUID, uuid1
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from tomlguard.utils.failure_proxy import TomlGuardFailureProxy
+from tomlguard.proxies.base import TomlGuardProxy
+from tomlguard.proxies.failure import TomlGuardFailureProxy
 from tomlguard.error import TomlAccessError
 
-class GuardProxyEntryMixin:
+class GuardProxyEntry_m:
     """ A Mixin to add to GuardBase.
     enables handling a number of conditions when accessing values in the underlying data.
     eg:
@@ -54,7 +55,7 @@ class GuardProxyEntryMixin:
 
         return TomlGuardFailureProxy(self, types=types, fallback=fallback)
 
-    def first_of(self, fallback:Any, types:Any|None=None) -> TomlGuardIterProxy:
+    def first_of(self, fallback:Any, types:Any|None=None) -> TomlGuardProxy:
         """
         get the first non-None value from a index path, even across arrays of tables
         so instead of: data.a.b.c[0].d
@@ -62,7 +63,7 @@ class GuardProxyEntryMixin:
         """
         raise NotImplementedError()
 
-    def all_of(self, fallback:Any, types:Any|None=None) -> TomlGuardIterProxy:
+    def all_of(self, fallback:Any, types:Any|None=None) -> TomlGuardProxy:
         raise NotImplementedError()
 
     def flatten_on(self, fallback:Any) -> TomlGuardIterProxy:
@@ -71,5 +72,5 @@ class GuardProxyEntryMixin:
         """
         raise NotImplementedError()
 
-    def match_on(self, **kwargs:tuple[str,Any]) -> TomlGuardIterProxy:
+    def match_on(self, **kwargs:tuple[str,Any]) -> TomlGuardProxy:
         raise NotImplementedError()

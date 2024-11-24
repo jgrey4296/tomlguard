@@ -35,7 +35,7 @@ logging = logmod.getLogger(__name__)
 try:
     import tomli_w
 
-    class WriterMixin:
+    class TomlWriter_m:
 
         def __str__(self) -> str:
             return tomli_w.dumps(self._table())
@@ -46,7 +46,7 @@ try:
 except ImportError:
     logging.debug("No Tomli-w found, TomlGuard will not write toml, only read it")
 
-    class WriterMixin:
+    class TomlWriter_m:
 
         def to_file(self, path:pl.Path) -> None:
             raise NotImplementedError("Tomli-w isn't installed, so TomlGuard can't write, only read")
