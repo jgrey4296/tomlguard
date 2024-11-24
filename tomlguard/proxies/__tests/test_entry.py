@@ -11,22 +11,22 @@ import pathlib as pl
 from typing import (Any, Callable, ClassVar, Generic, Iterable, Iterator,
                     Mapping, Match, MutableMapping, Sequence, Tuple, TypeVar, cast)
 ##-- end imports
-logging = logmod.root
 
 import pytest
 from tomlguard.error import TomlAccessError
 from tomlguard._base import GuardBase
 from tomlguard.tomlguard import TomlGuard
-from tomlguard.proxies.proxy import TomlGuardProxy
-from tomlguard.proxies.iter_proxy import TomlGuardIterProxy
+from tomlguard.proxies.failure import TomlGuardFailureProxy
+
+logging = logmod.root
 
 class TestProxiedTomlGuard:
 
     def test_initial(self):
         base = TomlGuard({"test": "blah"})
         proxied = base.on_fail("aweg")
-        assert(isinstance(proxied, TomlGuardProxy))
-        assert(isinstance(proxied.doesnt_exist, TomlGuardProxy))
+        assert(isinstance(proxied, TomlGuardFailureProxy))
+        assert(isinstance(proxied.doesnt_exist, TomlGuardFailureProxy))
 
     def test_proxy_on_existing_key(self):
         base = TomlGuard({"test": "blah"})
@@ -61,13 +61,13 @@ class TestProxiedTomlGuard:
     def test_proxy_value_retrieval(self):
         base     = TomlGuard({"test": "blah"})
         proxied = base.on_fail("aweg").test
-        assert(isinstance(proxied, TomlGuardProxy))
+        assert(isinstance(proxied, TomlGuardFailureProxy))
         assert(proxied() == "blah")
 
     def test_proxy_nested_value_retrieval(self):
         base     = TomlGuard({"test": { "blah": {"bloo": "final"}}})
         proxied = base.on_fail("aweg").test.blah.bloo
-        assert(isinstance(proxied, TomlGuardProxy))
+        assert(isinstance(proxied, TomlGuardFailureProxy))
         assert(proxied() == "final")
 
     def test_proxy_none_value_use_fallback(self):
@@ -75,7 +75,7 @@ class TestProxiedTomlGuard:
         assert(base.test is None)
         proxied = base.on_fail("aweg").test
         assert(base.test is None)
-        assert(isinstance(proxied, TomlGuardProxy))
+        assert(isinstance(proxied, TomlGuardFailureProxy))
         assert(base.test is None)
         assert(proxied._fallback == "aweg")
         assert(proxied() == "aweg")
@@ -83,13 +83,13 @@ class TestProxiedTomlGuard:
     def test_proxy_nested_false_value_uses_fallback(self):
         base     = TomlGuard({"top": {"mid": {"bot": None}}})
         proxied = base.on_fail("aweg").top.mid.bot
-        assert(isinstance(proxied, TomlGuardProxy))
+        assert(isinstance(proxied, TomlGuardFailureProxy))
         assert(proxied() is "aweg")
 
     def test_proxy_fallback(self):
         base     = TomlGuard({"test": { "blah": {"bloo": "final"}}})
         proxied = base.on_fail("aweg").test.blah.missing
-        assert(isinstance(proxied, TomlGuardProxy))
+        assert(isinstance(proxied, TomlGuardFailureProxy))
         assert(proxied() == "aweg")
 
     def test_no_proxy_error(self):
@@ -100,7 +100,7 @@ class TestProxiedTomlGuard:
     def test_proxy_early_check(self):
         base     = TomlGuard({"test": { "blah": {"bloo": "final"}}})
         proxied = base.on_fail("aweg").test
-        assert(isinstance(proxied, TomlGuardProxy))
+        assert(isinstance(proxied, TomlGuardFailureProxy))
 
     def test_proxy_multi_use(self):
         base     = TomlGuard({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
@@ -144,33 +144,3 @@ class TestProxiedTomlGuard:
     def test_proxied_report_no_duplicates(self):
         raise NotImplementedError()
 
-class TestProxiedIterGuards:
-    @pytest.mark.xfail
-    def test_proxied_flatten(self):
-        base  = TomlGuard({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
-        proxy = base.flatten_on({})
-        assert(isinstance(proxy, TomlGuardIterProxy))
-
-    @pytest.mark.xfail
-    def test_proxied_flatten_call(self):
-        base   = TomlGuard({"test": { "blah": [{"bloo": "final", "aweg": "joijo"}, {"other": 5}]}})
-        result = base.flatten_on({}).test.blah()
-        assert(dict(result) == {"bloo": "final", "aweg": "joijo", "other": 5})
-
-    @pytest.mark.xfail
-    def test_proxied_flatten_fallback(self):
-        base   = TomlGuard({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
-        result = base.flatten_on({}).test.blah()
-        assert(isinstance(result, dict))
-
-    @pytest.mark.xfail
-    def test_proxied_flatten_fallback_valued(self):
-        base   = TomlGuard({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
-        result = base.flatten_on({"a": "test"}).test.blah()
-        assert(result == {"a": "test"})
-
-    @pytest.mark.xfail
-    def test_proxied_bad_fallback(self):
-        base   = TomlGuard({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
-        with pytest.raises(TypeError):
-            base.flatten_on(2)

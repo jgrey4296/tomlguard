@@ -18,7 +18,6 @@ import pytest
 from tomlguard._base import GuardBase
 from tomlguard.error import TomlAccessError
 from tomlguard.tomlguard import TomlGuard
-from tomlguard.proxies import TomlGuardProxy
 
 class TestBaseTomlGuard:
 
