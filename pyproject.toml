@@ -35,7 +35,7 @@ test = [
 ##-- urls
 [project.urls]
 homepage      = "https://github.com/jgrey4296/tomlguard"
-documentation = "https://github.com/jgrey4296/tomlguard/wiki"
+documentation = "https://tomlguard.readthedocs.io/en/latest"
 repository    = "https://github.com/jgrey4296/tomlguard"
 changelog     = "https://github.com//jgrey4296/tomlguard/blob/master/CHANGELOG.md"
 
