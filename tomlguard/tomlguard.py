@@ -56,18 +56,19 @@ except ImportError:
 
 ##-- end imports
 
+from collections import ChainMap
+from tomlguard._base import GuardBase
+from tomlguard.error import TomlAccessError
+from tomlguard.mixins.proxy_m import GuardProxyEntry_m
+from tomlguard.mixins.loader_m import TomlLoader_m
+from tomlguard.mixins.writer_m import TomlWriter_m
+
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from collections import ChainMap
-from tomlguard.base import GuardBase
-from tomlguard.error import TomlAccessError
-from tomlguard.utils.proxy_mixin import GuardProxyEntryMixin
-from tomlguard.utils.loader import LoaderMixin
-from tomlguard.utils.writing import WriterMixin
 
-class TomlGuard(GuardBase, GuardProxyEntryMixin, LoaderMixin, WriterMixin):
+class TomlGuard(GuardBase, GuardProxyEntry_m, TomlLoader_m, TomlWriter_m):
 
     @classmethod
     def merge(cls, *tomlguards:Self, dfs:callable=None, index=None, shadow=False) -> Self:

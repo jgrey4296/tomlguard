@@ -15,10 +15,10 @@ from typing import (Any, Callable, ClassVar, Generic, Iterable, Iterator,
 logging = logmod.root
 
 import pytest
-from tomlguard.base import GuardBase
+from tomlguard._base import GuardBase
 from tomlguard.error import TomlAccessError
 from tomlguard.tomlguard import TomlGuard
-from tomlguard.utils.proxy import TomlGuardProxy
+from tomlguard.proxies import TomlGuardProxy
 
 class TestBaseTomlGuard:
 

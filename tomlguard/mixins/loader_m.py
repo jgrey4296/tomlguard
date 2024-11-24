@@ -37,7 +37,7 @@ try:
 except ImportError:
     Self = Any
 
-from tomlguard.base import TomlTypes
+from tomlguard import TomlTypes
 from tomlguard.error import TomlAccessError
 
 try:
@@ -47,7 +47,7 @@ except ImportError:
     # Fallback to external package
     import toml
 
-class LoaderMixin:
+class TomlLoader_m:
 
     @classmethod
     def read(cls, text:str) -> Self:

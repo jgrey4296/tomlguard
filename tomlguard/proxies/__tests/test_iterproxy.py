@@ -16,7 +16,7 @@ logging = logmod.root
 
 import pytest
 from tomlguard.error import TomlAccessError
-from tomlguard.utils.iter_proxy import TomlGuardIterProxy
+from tomlguard.proxies.iter_proxy import TomlGuardIterProxy
 from tomlguard import TomlGuard
 
 

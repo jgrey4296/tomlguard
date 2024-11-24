@@ -15,10 +15,10 @@ logging = logmod.root
 
 import pytest
 from tomlguard.error import TomlAccessError
-from tomlguard.base import GuardBase
+from tomlguard._base import GuardBase
 from tomlguard.tomlguard import TomlGuard
-from tomlguard.utils.proxy import TomlGuardProxy
-from tomlguard.utils.iter_proxy import TomlGuardIterProxy
+from tomlguard.proxies.proxy import TomlGuardProxy
+from tomlguard.proxies.iter_proxy import TomlGuardIterProxy
 
 class TestProxiedTomlGuard:
 

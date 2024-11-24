@@ -32,9 +32,9 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 from collections import ChainMap
-from tomlguard.base import TomlTypes, GuardBase
+from tomlguard._base import TomlTypes, GuardBase
 from tomlguard.error import TomlAccessError
-from tomlguard.utils.proxy import TomlGuardProxy, NullFallback
+from tomlguard.proxies.failure_proxy import TomlGuardFailureProxy
 
-class TomlGuardIterProxy(TomlGuardProxy):
+class TomlGuardIterProxy(TomlGuardFailureProxy):
     pass

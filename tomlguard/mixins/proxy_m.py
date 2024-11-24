@@ -31,10 +31,10 @@ from uuid import UUID, uuid1
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from tomlguard.utils.failure_proxy import TomlGuardFailureProxy
+from tomlguard.proxies.failure_proxy import TomlGuardFailureProxy
 from tomlguard.error import TomlAccessError
 
-class GuardProxyEntryMixin:
+class GuardProxyEntry_m:
     """ A Mixin to add to GuardBase.
     enables handling a number of conditions when accessing values in the underlying data.
     eg:

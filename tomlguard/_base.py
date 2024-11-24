@@ -35,19 +35,17 @@ except ImportError:
 
 ##-- end builtin imports
 
+from collections import ChainMap
+from collections.abc import Mapping, ItemsView, KeysView, ValuesView
+from tomlguard.error import TomlAccessError
+from tomlguard import TomlTypes
+
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from collections import ChainMap
-from collections.abc import Mapping, ItemsView, KeysView, ValuesView
-from tomlguard.error import TomlAccessError
-
 super_get             = object.__getattribute__
 super_set             = object.__setattr__
-
-TomlTypes : TypeAlias = str | int | float | bool | list['TomlTypes'] | dict[str,'TomlTypes'] | datetime.datetime
-TGDict    : TypeAlias = dict | ChainMap
 
 class GuardBase(Mapping[str, TomlTypes]):
     """

@@ -42,10 +42,9 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 from types import UnionType
-from tomlguard.utils.trace_helper import TraceHelper
-from tomlguard.base import GuardBase
+from tomlguard._base import GuardBase
 from tomlguard.error import TomlAccessError
-from tomlguard.base import TomlTypes
+from tomlguard import TomlTypes
 
 NullFallback = NoReturn
 
@@ -173,8 +172,7 @@ class TomlGuardFailureProxy:
         if self._types != Any and not isinstance(val, self._types):
             types_str = self._types_str()
             index_str  = ".".join(self.__index + ['(' + types_str + ')'])
-            err = TypeError("TomlProxy Value doesn't match declared Type: ", index_str, val, self._types)
-            raise err.with_traceback(TraceHelper()[5:10])
+            raise TypeError("TomlProxy Value doesn't match declared Type: ", index_str, val, self._types)
 
         return val
 
