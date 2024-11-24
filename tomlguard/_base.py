@@ -39,13 +39,14 @@ from collections import ChainMap
 from collections.abc import Mapping, ItemsView, KeysView, ValuesView
 from tomlguard.error import TomlAccessError
 from tomlguard import TomlTypes
+from tomlguard.mixins.access_m import super_get, super_set
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-super_get             = object.__getattribute__
-super_set             = object.__setattr__
+dict_items = type({}.items())
+
 
 class GuardBase(Mapping[str, TomlTypes]):
     """
@@ -60,36 +61,8 @@ class GuardBase(Mapping[str, TomlTypes]):
     data.report_defaulted() -> ['a.path.that.may.exist.<str|int>']
     """
 
-    _defaulted : ClassVar[set[str]] = set()
-
-    @staticmethod
-    def add_defaulted(index:str|list[str], val:TomlTypes, types:str="Any") -> None:
-        match index, val:
-            case list(), _:
-                raise TypeError("Tried to Register a default value with a list index, use a str")
-            case str(), bool():
-                index_str = f"{index} = {str(val).lower()} # <{types}>"
-            case str(), _:
-                index_str = f"{index} = {repr(val)} # <{types}>"
-            case [*xs], bool():
-                index_path = ".".join(xs)
-                index_str = f"{index_path} = {str(val).lower()} # <{types}>"
-            case [*xs], _:
-                index_path = ".".join(xs)
-                index_str = f"{index_path} = {val} # <{types}>"
-            case _, _:
-                raise TypeError("Unexpected Values found: ", val, index)
-
-        GuardBase._defaulted.add(index_str)
-
-    @staticmethod
-    def report_defaulted() -> list[str]:
-        """
-        Report the index paths inject default values
-        """
-        return list(GuardBase._defaulted)
-
     def __init__(self, data:dict[str,TomlTypes]=None, *, index:None|list[str]=None, mutable:bool=False):
+        super().__init__()
         super_set(self, "__table", data or {})
         super_set(self, "__index"   , (index or ["<root>"])[:])
         super_set(self, "__mutable" , mutable)
@@ -97,53 +70,17 @@ class GuardBase(Mapping[str, TomlTypes]):
     def __repr__(self) -> str:
         return f"<TomlGuard:{list(self.keys())}>"
 
-    def __setattr__(self, attr:str, value:TomlTypes) -> None:
-        if not getattr(self, "__mutable"):
-            raise TypeError()
-        super_set(self, attr, value)
-
-    def __getattr__(self, attr:str) -> GuardBase | TomlTypes | list[GuardBase]:
-        table = self._table()
-
-        if attr not in table and attr.replace("_", "-") not in table:
-            index     = self._index() + [attr]
-            index_s   = ".".join(index)
-            available = " ".join(self.keys())
-            raise TomlAccessError(f"{index_s} not found, available: [{available}]")
-
-        match table.get(attr, None) or table.get(attr.replace("_", "-"), None):
-            case dict() as result:
-                return self.__class__(result, index=self._index() + [attr])
-            case list() as result if all(isinstance(x, dict) for x in result):
-                index = self._index()
-                return [self.__class__(x, index=index[:]) for x in result if isinstance(x, dict)]
-            case _ as result:
-                return result
-
-    def __getitem__(self, keys:str|list[str]|tuple[str]) -> TomlTypes:
-        curr : typing.Self = self
-        match keys:
-            case tuple():
-                for key in keys:
-                    curr = curr.__getattr__(key)
-            case str():
-                curr = self.__getattr__(keys)
-            case _:
-                pass
-
-        return curr
-
     def __len__(self) -> int:
         return len(self._table())
 
     def __call__(self) -> TomlTypes:
-        raise TomlAccessError("Don't call a TomlGuard, call a TomlGuardProxy")
+        raise TomlAccessError("Don't call a TomlGuard, call a TomlGuardProxy using methods like .on_fail")
 
     def __iter__(self):
         return iter(getattr(self, "__table").items())
 
-    def __contains__(self, __key: object) -> bool:
-        return __key in self.keys()
+    def __contains__(self, _key: object) -> bool:
+        return _key in self.keys()
 
     def _index(self) -> list[str]:
         return super_get(self, "__index")[:]
@@ -151,19 +88,11 @@ class GuardBase(Mapping[str, TomlTypes]):
     def _table(self) -> dict[str,TomlTypes]:
         return super_get(self, "__table")
 
-    def get(self, key:str, default:TomlTypes|None=None) -> TomlTypes|None:
-        if key in self:
-            return self[key]
-
-        return default
-
     def keys(self) -> KeysView[str]:
-        # table  = object.__getattribute__(self, "__table")
         table = super_get(self, "__table")
         return table.keys()
 
     def items(self) -> ItemsView[str, TomlTypes]:
-        # match object.__getattribute__(self, "__table"):
         match super_get(self, "__table"):
             case dict() as val:
                 return val.items()
@@ -175,7 +104,6 @@ class GuardBase(Mapping[str, TomlTypes]):
                 raise TypeError("Unknown table type", x)
 
     def values(self) -> ValuesView[TomlTypes]:
-        # match object.__getattribute__(self, "__table"):
         match super_get(self, "__table"):
             case dict() as val:
                 return val.values()

@@ -36,6 +36,7 @@ from weakref import ref
 # ##-- end stdlib imports
 
 from tomlguard._base import GuardBase
+from tomlguard.mixins.reporter_m import DefaultedReporter_m
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -92,9 +93,9 @@ class TomlGuardProxy:
             case _, _, []:
                 pass
             case x , val, [*index] if x is NullFallback:
-                GuardBase.add_defaulted(".".join(index), val, types_str)
+                DefaultedReporter_m.add_defaulted(".".join(index), val, types_str)
             case val, _, [*index]:
-                GuardBase.add_defaulted(".".join(index), val, types_str)
+                DefaultedReporter_m.add_defaulted(".".join(index), val, types_str)
             case val, flbck, index,:
                 raise TypeError("Unexpected Values found: ", val, index, flbck)
 

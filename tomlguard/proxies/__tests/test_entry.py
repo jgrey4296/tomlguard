@@ -108,39 +108,3 @@ class TestProxiedTomlGuard:
         assert(proxied.bloo() == "final")
         assert(proxied.aweg() == "joijo")
 
-    def test_proxied_report_empty(self, mocker):
-        mocker.patch.object(GuardBase, "_defaulted", set())
-        base     = TomlGuard({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
-        assert(TomlGuard.report_defaulted() == [])
-
-    def test_proxied_report_no_existing_values(self, mocker):
-        mocker.patch.object(GuardBase, "_defaulted", set())
-        base     = TomlGuard({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
-        base.test.blah.bloo
-        base.test.blah.aweg
-        assert(TomlGuard.report_defaulted() == [])
-
-    def test_proxied_report_missing_values(self, mocker):
-        mocker.patch.object(GuardBase, "_defaulted", set())
-        base              = TomlGuard({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
-        base.on_fail(False).this.doesnt.exist()
-        base.on_fail(False).test.blah.other()
-
-        defaulted = TomlGuard.report_defaulted()
-        assert("<root>.this.doesnt.exist = false # <Any>" in defaulted)
-        assert("<root>.test.blah.other = false # <Any>" in defaulted)
-
-    def test_proxied_report_missing_typed_values(self, mocker):
-        mocker.patch.object(GuardBase, "_defaulted", set())
-        base     = TomlGuard({"test": { "blah": {"bloo": "final", "aweg": "joijo"}}})
-        base.on_fail("aValue", str).this.doesnt.exist()
-        base.on_fail(2, int).test.blah.other()
-
-        defaulted = TomlGuard.report_defaulted()
-        assert("<root>.this.doesnt.exist = 'aValue' # <str>" in defaulted)
-        assert("<root>.test.blah.other = 2 # <int>" in defaulted)
-
-    @pytest.mark.skip("not implemented")
-    def test_proxied_report_no_duplicates(self):
-        raise NotImplementedError()
-
